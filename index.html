@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Doodle Template Generator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <h1>Doodle Template Generator</h1>
+    <p>Upload a photo, generate a doodle-style tracing template, print it, or draw over it online.</p>
+  </header>
+
+  <main class="app">
+    <section class="panel controls">
+      <h2>1. Upload photo</h2>
+      <input id="photoInput" type="file" accept="image/*" />
+      <p class="small">Your photo stays in your browser. Nothing is uploaded to a server.</p>
+
+      <h2>2. Adjust doodle settings</h2>
+      <label>Detail level <input id="detail" type="range" min="20" max="120" value="60" /></label>
+      <label>Line thickness <input id="thickness" type="range" min="1" max="8" value="2" /></label>
+      <label>Pattern amount <input id="patternAmount" type="range" min="0" max="100" value="35" /></label>
+
+      <div class="checks">
+        <label><input id="useDots" type="checkbox" checked /> Dots</label>
+        <label><input id="useSwirls" type="checkbox" checked /> Swirls</label>
+        <label><input id="useShapes" type="checkbox" checked /> Shapes</label>
+      </div>
+
+      <h2>3. Choose output</h2>
+      <div class="button-grid">
+        <button id="lightBtn">Generate light template</button>
+        <button id="printLightBtn">Print light</button>
+        <button id="darkBtn">Generate dark template</button>
+        <button id="printDarkBtn">Print dark</button>
+        <button id="onlineBtn" class="wide">Generate online drawing template</button>
+        <button id="clearDrawingBtn" class="wide secondary">Clear online drawing</button>
+      </div>
+
+      <h2>Drawing tools</h2>
+      <label>Pen size <input id="penSize" type="range" min="1" max="20" value="4" /></label>
+      <button id="downloadBtn" class="wide">Download PNG</button>
+    </section>
+
+    <section class="panel workspace">
+      <div class="canvas-wrap">
+        <canvas id="templateCanvas" width="900" height="1200"></canvas>
+        <canvas id="drawCanvas" width="900" height="1200"></canvas>
+      </div>
+      <p id="status">Upload a photo to begin.</p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
