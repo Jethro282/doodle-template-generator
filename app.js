@@ -6,7 +6,6 @@ const dctx = drawCanvas.getContext('2d');
 const statusEl = document.getElementById('status');
 
 const detail = document.getElementById('detail');
-const thickness = document.getElementById('thickness');
 const patternAmount = document.getElementById('patternAmount');
 const useDots = document.getElementById('useDots');
 const useSwirls = document.getElementById('useSwirls');
@@ -60,40 +59,24 @@ function generateTemplate(mode) {
     setStatus('Please upload a photo first.');
     return;
   }
+
   lastMode = mode;
   drawCanvas.classList.toggle('drawing-enabled', mode === 'online');
+
   drawImageContained(tctx, sourceImage);
 
   const width = templateCanvas.width;
   const height = templateCanvas.height;
   const imgData = tctx.getImageData(0, 0, width, height);
   const src = imgData.data;
-  const output = tctx.createImageData(width, height);
-  const dst = output.data;
 
-  const threshold = Number(detail.value);
-  const alpha = mode === 'light' ? 70 : 255;
-  const lineValue = mode === 'light' ? 175 : 0;
+  const greyMap = buildGreyMap(src, width, height);
+  const edgeMap = buildEdgeMap(greyMap, width, height);
 
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      const i = (y * width + x) * 4;
-      const gx = grey(src, i + 4) - grey(src, i - 4);
-      const gy = grey(src, i + width * 4) - grey(src, i - width * 4);
-      const mag = Math.sqrt(gx * gx + gy * gy);
-      dst[i] = 255; dst[i + 1] = 255; dst[i + 2] = 255; dst[i + 3] = 255;
-      if (mag > threshold) {
-        dst[i] = lineValue;
-        dst[i + 1] = lineValue;
-        dst[i + 2] = lineValue;
-        dst[i + 3] = alpha;
-      }
-    }
-  }
-
-  tctx.putImageData(output, 0, 0);
-  thickenLines(Number(thickness.value), mode);
-  addDoodlePatterns(mode);
+  clearTemplate(mode);
+  drawPhotoBasedContours(greyMap, edgeMap, width, height, mode);
+  addFeatureHatching(greyMap, edgeMap, width, height, mode);
+  addDoodlePatterns(greyMap, edgeMap, width, height, mode);
 
   if (mode === 'online') {
     setStatus('Online template ready. Draw with mouse, stylus, or finger.');
@@ -102,79 +85,190 @@ function generateTemplate(mode) {
   }
 }
 
-function grey(data, i) {
-  return 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-}
-
-function thickenLines(size, mode) {
-  if (size <= 1) return;
-  const temp = document.createElement('canvas');
-  temp.width = templateCanvas.width;
-  temp.height = templateCanvas.height;
-  const c = temp.getContext('2d');
-  c.drawImage(templateCanvas, 0, 0);
-
+function clearTemplate(mode) {
   tctx.clearRect(0, 0, templateCanvas.width, templateCanvas.height);
   tctx.fillStyle = 'white';
   tctx.fillRect(0, 0, templateCanvas.width, templateCanvas.height);
-  tctx.globalAlpha = mode === 'light' ? 0.35 : 1;
-  for (let dx = -size; dx <= size; dx++) {
-    for (let dy = -size; dy <= size; dy++) {
-      if (Math.abs(dx) + Math.abs(dy) <= size) tctx.drawImage(temp, dx, dy);
+  tctx.globalAlpha = mode === 'light' ? 0.55 : 1;
+}
+
+function buildGreyMap(data, width, height) {
+  const grey = new Float32Array(width * height);
+
+  for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+    grey[p] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+  }
+
+  // Small blur to reduce photo noise while keeping main forms.
+  const blurred = new Float32Array(width * height);
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const p = y * width + x;
+      blurred[p] = (
+        grey[p] * 4 +
+        grey[p - 1] * 2 + grey[p + 1] * 2 +
+        grey[p - width] * 2 + grey[p + width] * 2 +
+        grey[p - width - 1] + grey[p - width + 1] +
+        grey[p + width - 1] + grey[p + width + 1]
+      ) / 16;
+    }
+  }
+  return blurred;
+}
+
+function buildEdgeMap(grey, width, height) {
+  const edges = new Float32Array(width * height);
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const p = y * width + x;
+      const gx = -grey[p - width - 1] - 2 * grey[p - 1] - grey[p + width - 1]
+               + grey[p - width + 1] + 2 * grey[p + 1] + grey[p + width + 1];
+      const gy = -grey[p - width - 1] - 2 * grey[p - width] - grey[p - width + 1]
+               + grey[p + width - 1] + 2 * grey[p + width] + grey[p + width + 1];
+      edges[p] = Math.sqrt(gx * gx + gy * gy);
+    }
+  }
+  return edges;
+}
+
+function drawPhotoBasedContours(grey, edges, width, height, mode) {
+  const detailValue = Number(detail.value);
+  // Higher detail slider = lower threshold = more lines.
+  const edgeThreshold = Math.max(18, 145 - detailValue);
+  const contourStep = Math.max(18, 70 - Math.round(detailValue / 3));
+  const dotStep = mode === 'light' ? 2 : 1;
+
+  for (let y = 2; y < height - 2; y += dotStep) {
+    for (let x = 2; x < width - 2; x += dotStep) {
+      const p = y * width + x;
+      const edge = edges[p];
+      const shade = grey[p];
+      const neighbour = grey[p + 2];
+      const contour = Math.floor(shade / contourStep) !== Math.floor(neighbour / contourStep);
+
+      if (edge > edgeThreshold || contour) {
+        const strength = Math.min(1, edge / 180);
+        const baseAlpha = mode === 'light' ? 0.28 : 0.86;
+        const alpha = contour ? baseAlpha * 0.55 : baseAlpha * (0.45 + strength);
+        const line = autoLineWidth(edge, shade, contour);
+        drawDotLinePixel(x, y, line, mode, alpha);
+      }
     }
   }
   tctx.globalAlpha = 1;
 }
 
-function addDoodlePatterns(mode) {
+function autoLineWidth(edge, shade, contour) {
+  // Darker areas and stronger edges get thicker marks. Contours stay finer.
+  if (contour) return 0.65;
+  if (edge > 180 || shade < 65) return 2.4;
+  if (edge > 110 || shade < 105) return 1.7;
+  return 1.05;
+}
+
+function drawDotLinePixel(x, y, radius, mode, alpha) {
+  const v = mode === 'light' ? 155 : 0;
+  tctx.fillStyle = `rgba(${v},${v},${v},${alpha})`;
+  tctx.beginPath();
+  tctx.arc(x, y, radius, 0, Math.PI * 2);
+  tctx.fill();
+}
+
+function addFeatureHatching(grey, edges, width, height, mode) {
+  const colour = mode === 'light' ? 'rgba(120,120,120,.22)' : 'rgba(0,0,0,.42)';
+  tctx.strokeStyle = colour;
+  tctx.lineCap = 'round';
+
+  const spacing = Math.max(14, 36 - Math.floor(Number(detail.value) / 5));
+  for (let y = spacing; y < height - spacing; y += spacing) {
+    for (let x = spacing; x < width - spacing; x += spacing) {
+      const p = y * width + x;
+      const shade = grey[p];
+      const edge = edges[p];
+
+      // Add small sketch strokes mostly in darker or detailed regions.
+      if (shade < 175 || edge > 55) {
+        const length = 6 + (255 - shade) / 18 + Math.min(edge / 18, 9);
+        const angle = ((shade + edge) % 120) * Math.PI / 180;
+        tctx.lineWidth = Math.max(0.6, Math.min(2.2, (255 - shade) / 130));
+        tctx.beginPath();
+        tctx.moveTo(x - Math.cos(angle) * length, y - Math.sin(angle) * length);
+        tctx.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length);
+        tctx.stroke();
+      }
+    }
+  }
+}
+
+function addDoodlePatterns(grey, edges, width, height, mode) {
   const amount = Number(patternAmount.value);
   if (amount === 0) return;
 
-  const colour = mode === 'light' ? 'rgba(150,150,150,.35)' : 'rgba(0,0,0,.75)';
+  const colour = mode === 'light' ? 'rgba(130,130,130,.28)' : 'rgba(0,0,0,.62)';
   tctx.strokeStyle = colour;
   tctx.fillStyle = colour;
-  tctx.lineWidth = mode === 'light' ? 1 : 1.5;
+  tctx.lineCap = 'round';
 
-  const count = Math.floor(amount * 1.2);
-  const seed = 42;
+  const seed = 282;
   let r = seed;
   const rand = () => {
     r = (r * 1664525 + 1013904223) % 4294967296;
     return r / 4294967296;
   };
 
-  for (let i = 0; i < count; i++) {
-    const x = rand() * templateCanvas.width;
-    const y = rand() * templateCanvas.height;
-    const s = 6 + rand() * 30;
+  // More patterns than before, but placed preferentially where the photo has detail.
+  const count = Math.floor(amount * 4.5);
+  let placed = 0;
+  let attempts = 0;
 
-    if (useDots.checked && i % 3 === 0) {
+  while (placed < count && attempts < count * 20) {
+    attempts++;
+    const x = Math.floor(rand() * width);
+    const y = Math.floor(rand() * height);
+    const p = y * width + x;
+    const shade = grey[p] || 255;
+    const edge = edges[p] || 0;
+
+    // Avoid empty white margins; favour darker/detail areas so it resembles the source photo.
+    const interesting = shade < 210 || edge > 35;
+    if (!interesting && rand() > 0.08) continue;
+
+    const s = 4 + rand() * (10 + amount / 3);
+    const weight = Math.max(0.6, Math.min(2.6, (255 - shade) / 100 + edge / 180));
+    tctx.lineWidth = mode === 'light' ? weight * 0.75 : weight;
+
+    if (useDots.checked && placed % 3 === 0) {
       tctx.beginPath();
-      tctx.arc(x, y, 1 + rand() * 3, 0, Math.PI * 2);
+      tctx.arc(x, y, 0.8 + rand() * Math.min(4, s / 3), 0, Math.PI * 2);
       tctx.fill();
     }
-    if (useSwirls.checked && i % 3 === 1) {
+
+    if (useSwirls.checked && placed % 3 === 1) {
+      const turns = 2.2 + rand() * 2.2;
       tctx.beginPath();
-      for (let a = 0; a < Math.PI * 3; a += 0.2) {
-        const rr = s * a / (Math.PI * 3);
+      for (let a = 0; a < Math.PI * turns; a += 0.22) {
+        const rr = s * a / (Math.PI * turns);
         const px = x + Math.cos(a) * rr;
         const py = y + Math.sin(a) * rr;
         if (a === 0) tctx.moveTo(px, py); else tctx.lineTo(px, py);
       }
       tctx.stroke();
     }
-    if (useShapes.checked && i % 3 === 2) {
+
+    if (useShapes.checked && placed % 3 === 2) {
       const sides = 3 + Math.floor(rand() * 4);
       tctx.beginPath();
-      for (let p = 0; p < sides; p++) {
-        const a = (Math.PI * 2 * p) / sides;
+      for (let n = 0; n < sides; n++) {
+        const a = (Math.PI * 2 * n) / sides + rand() * 0.25;
         const px = x + Math.cos(a) * s;
         const py = y + Math.sin(a) * s;
-        if (p === 0) tctx.moveTo(px, py); else tctx.lineTo(px, py);
+        if (n === 0) tctx.moveTo(px, py); else tctx.lineTo(px, py);
       }
       tctx.closePath();
       tctx.stroke();
     }
+
+    placed++;
   }
 }
 
