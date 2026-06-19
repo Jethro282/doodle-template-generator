@@ -1,414 +1,320 @@
 const photoInput = document.getElementById('photoInput');
-const templateCanvas = document.getElementById('templateCanvas');
+const outputCanvas = document.getElementById('outputCanvas');
 const drawCanvas = document.getElementById('drawCanvas');
-const tctx = templateCanvas.getContext('2d', { willReadFrequently: true });
-const dctx = drawCanvas.getContext('2d');
-const statusEl = document.getElementById('status');
+const ctx = outputCanvas.getContext('2d', { willReadFrequently: true });
+const drawCtx = drawCanvas.getContext('2d');
+const lightBtn = document.getElementById('lightBtn');
+const darkBtn = document.getElementById('darkBtn');
+const onlineBtn = document.getElementById('onlineBtn');
+const printBtn = document.getElementById('printBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const clearDrawingBtn = document.getElementById('clearDrawingBtn');
+const detailSlider = document.getElementById('detailSlider');
+const densitySlider = document.getElementById('densitySlider');
+const outlineSlider = document.getElementById('outlineSlider');
+const styleSelect = document.getElementById('styleSelect');
+const canvasWrap = document.querySelector('.canvasWrap');
 
-const likeness = document.getElementById('likeness');
-const density = document.getElementById('density');
-const patternSize = document.getElementById('patternSize');
-const useDots = document.getElementById('useDots');
-const useSwirls = document.getElementById('useSwirls');
-const useWaves = document.getElementById('useWaves');
-const useHatching = document.getElementById('useHatching');
-const useShapes = document.getElementById('useShapes');
-const penSize = document.getElementById('penSize');
-
-let sourceImage = null;
-let lastMode = 'dark';
+let loadedImage = null;
+let currentMode = 'dark';
 let drawing = false;
-let imageBox = { x: 0, y: 0, w: templateCanvas.width, h: templateCanvas.height };
+let lastPoint = null;
 
-function setStatus(msg) { statusEl.textContent = msg; }
+function setupBlank() {
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+  ctx.fillStyle = '#777';
+  ctx.font = '28px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('Upload a photo to generate a hybrid doodle template', outputCanvas.width / 2, outputCanvas.height / 2);
+}
+setupBlank();
 
-photoInput.addEventListener('change', e => {
-  const file = e.target.files[0];
+photoInput.addEventListener('change', (event) => {
+  const file = event.target.files?.[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = event => {
-    const img = new Image();
-    img.onload = () => {
-      sourceImage = img;
-      clearDrawing();
-      drawPreview();
-      setStatus('Photo loaded. Choose a doodle option.');
-    };
-    img.src = event.target.result;
+  const img = new Image();
+  img.onload = () => {
+    loadedImage = img;
+    generateTemplate('dark');
   };
-  reader.readAsDataURL(file);
+  img.src = URL.createObjectURL(file);
 });
 
-function drawImageContained(ctx, img) {
-  const cw = templateCanvas.width;
-  const ch = templateCanvas.height;
-  const scale = Math.min(cw / img.width, ch / img.height);
-  const w = img.width * scale;
-  const h = img.height * scale;
-  const x = (cw - w) / 2;
-  const y = (ch - h) / 2;
-  imageBox = { x, y, w, h };
-  ctx.clearRect(0, 0, cw, ch);
-  ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, cw, ch);
-  ctx.drawImage(img, x, y, w, h);
-}
-
-function drawPreview() {
-  if (!sourceImage) return;
-  drawImageContained(tctx, sourceImage);
-}
+lightBtn.addEventListener('click', () => generateTemplate('light'));
+darkBtn.addEventListener('click', () => generateTemplate('dark'));
+onlineBtn.addEventListener('click', () => generateTemplate('online'));
+printBtn.addEventListener('click', () => window.print());
+downloadBtn.addEventListener('click', downloadPng);
+clearDrawingBtn.addEventListener('click', () => drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height));
 
 function generateTemplate(mode) {
-  if (!sourceImage) {
-    setStatus('Please upload a photo first.');
-    return;
-  }
+  if (!loadedImage) return;
+  currentMode = mode;
+  const online = mode === 'online';
+  canvasWrap.classList.toggle('drawing', online);
+  clearDrawingBtn.disabled = !online;
+  drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
 
-  lastMode = mode;
-  drawCanvas.classList.toggle('drawing-enabled', mode === 'online');
+  const W = outputCanvas.width;
+  const H = outputCanvas.height;
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, W, H);
 
-  drawImageContained(tctx, sourceImage);
-  const width = templateCanvas.width;
-  const height = templateCanvas.height;
-  const imgData = tctx.getImageData(0, 0, width, height);
-  const src = imgData.data;
+  const fitted = fitImage(loadedImage.width, loadedImage.height, W, H);
 
-  const grey = buildGreyMap(src, width, height);
-  const smooth = blurMap(grey, width, height, 2);
-  const edges = buildEdgeMap(smooth, width, height);
-
-  clearTemplate();
-  drawPosterToneBase(smooth, width, height, mode);
-  drawMajorOutlines(edges, smooth, width, height, mode);
-  drawDoodleField(smooth, edges, width, height, mode);
-  drawFineDetail(edges, smooth, width, height, mode);
-
-  if (mode === 'online') {
-    setStatus('Online doodle-art template ready. Draw with mouse, stylus, or finger.');
-  } else {
-    setStatus(`${mode === 'light' ? 'Light' : 'Dark'} doodle-art template generated.`);
-  }
-}
-
-function clearTemplate() {
-  tctx.clearRect(0, 0, templateCanvas.width, templateCanvas.height);
+  const temp = document.createElement('canvas');
+  temp.width = W;
+  temp.height = H;
+  const tctx = temp.getContext('2d', { willReadFrequently: true });
   tctx.fillStyle = 'white';
-  tctx.fillRect(0, 0, templateCanvas.width, templateCanvas.height);
-}
+  tctx.fillRect(0, 0, W, H);
+  tctx.drawImage(loadedImage, fitted.x, fitted.y, fitted.w, fitted.h);
 
-function inPhoto(x, y) {
-  return x >= imageBox.x && x <= imageBox.x + imageBox.w && y >= imageBox.y && y <= imageBox.y + imageBox.h;
-}
+  const imgData = tctx.getImageData(0, 0, W, H);
+  const gray = makeGray(imgData.data, W, H);
+  const edges = sobel(gray, W, H);
 
-function buildGreyMap(data, width, height) {
-  const grey = new Float32Array(width * height);
-  for (let i = 0, p = 0; i < data.length; i += 4, p++) {
-    grey[p] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+  // Light construction wash - enough to guide, not enough to look like a printed photo.
+  if (mode === 'light') {
+    ctx.globalAlpha = 0.08;
+    ctx.drawImage(temp, 0, 0);
+    ctx.globalAlpha = 1;
   }
-  return grey;
+
+  const detail = Number(detailSlider.value);
+  const density = Number(densitySlider.value);
+  const style = styleSelect.value;
+  const step = Math.max(7, 18 - detail * 2);
+  const baseAlpha = mode === 'light' ? 0.23 : 0.9;
+  const outlineAlpha = mode === 'light' ? 0.22 : 0.82;
+  const colour = mode === 'light' ? 120 : 0;
+
+  // Doodle tone field. The photo likeness comes from density/size following darkness.
+  for (let y = fitted.y; y < fitted.y + fitted.h; y += step) {
+    for (let x = fitted.x; x < fitted.x + fitted.w; x += step) {
+      const stats = sampleStats(gray, edges, W, H, x, y, step);
+      const darkness = 1 - stats.luma / 255;
+      const edge = Math.min(1, stats.edge / 255);
+      const tone = clamp(darkness * 0.85 + edge * 0.35, 0, 1);
+
+      const chance = clamp(tone * (0.42 + density * 0.14), 0.02, 0.95);
+      const r = seededRandom(x * 37 + y * 101 + Math.floor(tone * 1000));
+      if (r > chance) continue;
+
+      const jitterX = (seededRandom(x + y * 3) - 0.5) * step * 0.8;
+      const jitterY = (seededRandom(x * 5 + y) - 0.5) * step * 0.8;
+      const px = x + step / 2 + jitterX;
+      const py = y + step / 2 + jitterY;
+      const size = Math.max(1.1, step * (0.16 + tone * 0.82));
+      ctx.strokeStyle = `rgba(${colour},${colour},${colour},${baseAlpha})`;
+      ctx.fillStyle = `rgba(${colour},${colour},${colour},${baseAlpha})`;
+      ctx.lineWidth = mode === 'light' ? 0.65 + tone * 1.2 : 0.8 + tone * 2.2;
+
+      const patternSeed = seededRandom(x * 13 + y * 17);
+      drawDoodleMark(ctx, px, py, size, tone, patternSeed, style);
+    }
+  }
+
+  // Add important outlines last. This gives traceable structure without becoming only edge detection.
+  drawEdgeOverlay(ctx, edges, gray, W, H, fitted, outlineAlpha, mode === 'light' ? 135 : 0, Number(outlineSlider.value));
+
+  // Border/crop guide.
+  ctx.strokeStyle = mode === 'light' ? 'rgba(120,120,120,.35)' : 'rgba(0,0,0,.55)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(fitted.x, fitted.y, fitted.w, fitted.h);
+
+  printBtn.disabled = false;
+  downloadBtn.disabled = false;
 }
 
-function blurMap(map, width, height, passes) {
-  let current = map;
-  for (let pass = 0; pass < passes; pass++) {
-    const out = new Float32Array(width * height);
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
-        const p = y * width + x;
-        out[p] = (
-          current[p] * 4 +
-          current[p - 1] * 2 + current[p + 1] * 2 +
-          current[p - width] * 2 + current[p + width] * 2 +
-          current[p - width - 1] + current[p - width + 1] +
-          current[p + width - 1] + current[p + width + 1]
-        ) / 16;
+function fitImage(iw, ih, W, H) {
+  const margin = 45;
+  const scale = Math.min((W - margin * 2) / iw, (H - margin * 2) / ih);
+  const w = iw * scale;
+  const h = ih * scale;
+  return { x: (W - w) / 2, y: (H - h) / 2, w, h };
+}
+
+function makeGray(data, W, H) {
+  const gray = new Uint8ClampedArray(W * H);
+  for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+    gray[p] = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+  }
+  return gray;
+}
+
+function sobel(gray, W, H) {
+  const out = new Uint8ClampedArray(W * H);
+  for (let y = 1; y < H - 1; y++) {
+    for (let x = 1; x < W - 1; x++) {
+      const i = y * W + x;
+      const gx = -gray[i - W - 1] - 2 * gray[i - 1] - gray[i + W - 1] + gray[i - W + 1] + 2 * gray[i + 1] + gray[i + W + 1];
+      const gy = -gray[i - W - 1] - 2 * gray[i - W] - gray[i - W + 1] + gray[i + W - 1] + 2 * gray[i + W] + gray[i + W + 1];
+      out[i] = Math.min(255, Math.sqrt(gx * gx + gy * gy));
+    }
+  }
+  return out;
+}
+
+function sampleStats(gray, edges, W, H, x, y, size) {
+  let luma = 0, edge = 0, count = 0;
+  const x0 = Math.max(0, Math.floor(x));
+  const y0 = Math.max(0, Math.floor(y));
+  const x1 = Math.min(W, Math.floor(x + size));
+  const y1 = Math.min(H, Math.floor(y + size));
+  for (let yy = y0; yy < y1; yy += 2) {
+    for (let xx = x0; xx < x1; xx += 2) {
+      const i = yy * W + xx;
+      luma += gray[i];
+      edge += edges[i];
+      count++;
+    }
+  }
+  return { luma: luma / Math.max(1, count), edge: edge / Math.max(1, count) };
+}
+
+function drawDoodleMark(c, x, y, size, tone, seed, style) {
+  const type = chooseType(seed, tone, style);
+  c.save();
+  c.translate(x, y);
+  c.rotate((seededRandom(seed * 9999) - 0.5) * Math.PI);
+
+  if (type === 'dot') {
+    c.beginPath();
+    c.arc(0, 0, size * 0.36, 0, Math.PI * 2);
+    c.fill();
+  } else if (type === 'ring') {
+    c.beginPath();
+    c.arc(0, 0, size * 0.42, 0, Math.PI * 2);
+    c.stroke();
+  } else if (type === 'spiral') {
+    c.beginPath();
+    const turns = 2.3 + tone * 2;
+    for (let a = 0; a < Math.PI * turns; a += 0.24) {
+      const r = (a / (Math.PI * turns)) * size * 0.52;
+      const px = Math.cos(a) * r;
+      const py = Math.sin(a) * r;
+      if (a === 0) c.moveTo(px, py); else c.lineTo(px, py);
+    }
+    c.stroke();
+  } else if (type === 'hatch') {
+    const n = 2 + Math.floor(tone * 5);
+    for (let i = -n; i <= n; i++) {
+      c.beginPath();
+      c.moveTo(-size * 0.55, i * size * 0.18);
+      c.lineTo(size * 0.55, i * size * 0.18);
+      c.stroke();
+    }
+  } else if (type === 'cross') {
+    c.beginPath();
+    c.moveTo(-size * 0.45, 0); c.lineTo(size * 0.45, 0);
+    c.moveTo(0, -size * 0.45); c.lineTo(0, size * 0.45);
+    c.stroke();
+  } else if (type === 'wave') {
+    c.beginPath();
+    for (let i = -5; i <= 5; i++) {
+      const px = (i / 5) * size * 0.55;
+      const py = Math.sin(i * 1.2) * size * 0.18;
+      if (i === -5) c.moveTo(px, py); else c.lineTo(px, py);
+    }
+    c.stroke();
+  } else {
+    c.beginPath();
+    const sides = 3 + Math.floor(seed * 4);
+    for (let i = 0; i <= sides; i++) {
+      const a = (i / sides) * Math.PI * 2;
+      const px = Math.cos(a) * size * 0.44;
+      const py = Math.sin(a) * size * 0.44;
+      if (i === 0) c.moveTo(px, py); else c.lineTo(px, py);
+    }
+    c.stroke();
+  }
+  c.restore();
+}
+
+function chooseType(seed, tone, style) {
+  if (style === 'stipple') return seed < 0.78 ? 'dot' : 'ring';
+  if (style === 'zentangle') {
+    if (seed < 0.26) return 'spiral';
+    if (seed < 0.52) return 'hatch';
+    if (seed < 0.72) return 'wave';
+    if (seed < 0.88) return 'ring';
+    return 'shape';
+  }
+  if (tone > 0.78) return seed < 0.45 ? 'dot' : seed < 0.7 ? 'hatch' : 'spiral';
+  if (tone > 0.48) return seed < 0.25 ? 'ring' : seed < 0.5 ? 'wave' : seed < 0.75 ? 'spiral' : 'cross';
+  return seed < 0.4 ? 'ring' : seed < 0.7 ? 'wave' : 'shape';
+}
+
+function drawEdgeOverlay(c, edges, gray, W, H, fitted, alpha, colour, strength) {
+  const threshold = 115 - strength * 12;
+  c.strokeStyle = `rgba(${colour},${colour},${colour},${alpha})`;
+  c.fillStyle = `rgba(${colour},${colour},${colour},${alpha})`;
+  for (let y = Math.floor(fitted.y) + 1; y < fitted.y + fitted.h - 1; y += 2) {
+    for (let x = Math.floor(fitted.x) + 1; x < fitted.x + fitted.w - 1; x += 2) {
+      const i = y * W + x;
+      if (edges[i] > threshold) {
+        const darkness = 1 - gray[i] / 255;
+        c.globalAlpha = alpha * (0.45 + darkness * 0.7);
+        c.beginPath();
+        c.arc(x, y, 0.45 + darkness * 0.8, 0, Math.PI * 2);
+        c.fill();
       }
     }
-    current = out;
   }
-  return current;
+  c.globalAlpha = 1;
 }
 
-function buildEdgeMap(grey, width, height) {
-  const edges = new Float32Array(width * height);
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      const p = y * width + x;
-      const gx = -grey[p - width - 1] - 2 * grey[p - 1] - grey[p + width - 1]
-               + grey[p - width + 1] + 2 * grey[p + 1] + grey[p + width + 1];
-      const gy = -grey[p - width - 1] - 2 * grey[p - width] - grey[p - width + 1]
-               + grey[p + width - 1] + 2 * grey[p + width] + grey[p + width + 1];
-      edges[p] = Math.sqrt(gx * gx + gy * gy);
-    }
-  }
-  return edges;
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function seededRandom(n) {
+  const x = Math.sin(n * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
 }
 
-function toneAlpha(mode, shade, multiplier = 1) {
-  const dark = (255 - shade) / 255;
-  if (mode === 'light') return Math.min(0.36, 0.06 + dark * 0.28) * multiplier;
-  if (mode === 'online') return Math.min(0.48, 0.08 + dark * 0.36) * multiplier;
-  return Math.min(0.92, 0.14 + dark * 0.75) * multiplier;
+function downloadPng() {
+  const combined = document.createElement('canvas');
+  combined.width = outputCanvas.width;
+  combined.height = outputCanvas.height;
+  const c = combined.getContext('2d');
+  c.drawImage(outputCanvas, 0, 0);
+  c.drawImage(drawCanvas, 0, 0);
+  const a = document.createElement('a');
+  a.download = `doodle-template-${currentMode}.png`;
+  a.href = combined.toDataURL('image/png');
+  a.click();
 }
 
-function strokeFor(mode, shade, alphaMul = 1) {
-  const v = mode === 'light' ? 145 : 0;
-  return `rgba(${v},${v},${v},${toneAlpha(mode, shade, alphaMul)})`;
-}
-
-function drawPosterToneBase(grey, width, height, mode) {
-  // This gives the image visible mass before doodles are added.
-  const step = 5;
-  for (let y = Math.floor(imageBox.y); y < imageBox.y + imageBox.h; y += step) {
-    for (let x = Math.floor(imageBox.x); x < imageBox.x + imageBox.w; x += step) {
-      const p = y * width + x;
-      const shade = grey[p] || 255;
-      if (shade > 242) continue;
-      const alpha = toneAlpha(mode, shade, 0.18);
-      tctx.fillStyle = mode === 'light' ? `rgba(170,170,170,${alpha})` : `rgba(0,0,0,${alpha})`;
-      tctx.fillRect(x, y, step + 1, step + 1);
-    }
-  }
-}
-
-function drawMajorOutlines(edges, grey, width, height, mode) {
-  const like = Number(likeness.value);
-  const threshold = 70 - like * 0.35;
-  tctx.lineCap = 'round';
-
-  for (let y = Math.floor(imageBox.y) + 2; y < imageBox.y + imageBox.h - 2; y += 2) {
-    for (let x = Math.floor(imageBox.x) + 2; x < imageBox.x + imageBox.w - 2; x += 2) {
-      const p = y * width + x;
-      const edge = edges[p];
-      if (edge < threshold) continue;
-      const shade = grey[p] || 255;
-      const weight = Math.min(3.2, 0.55 + edge / 80 + (255 - shade) / 180);
-      tctx.strokeStyle = strokeFor(mode, shade, 1.35);
-      tctx.lineWidth = mode === 'light' ? weight * 0.65 : weight;
-      const angle = gradientAngle(grey, width, x, y) + Math.PI / 2;
-      const len = Math.min(12, 3 + edge / 38);
-      tctx.beginPath();
-      tctx.moveTo(x - Math.cos(angle) * len, y - Math.sin(angle) * len);
-      tctx.lineTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len);
-      tctx.stroke();
-    }
-  }
-}
-
-function gradientAngle(grey, width, x, y) {
-  const p = y * width + x;
-  const gx = (grey[p + 1] || grey[p]) - (grey[p - 1] || grey[p]);
-  const gy = (grey[p + width] || grey[p]) - (grey[p - width] || grey[p]);
-  return Math.atan2(gy, gx);
-}
-
-function drawDoodleField(grey, edges, width, height, mode) {
-  const dens = Number(density.value);
-  const size = Number(patternSize.value);
-  const spacing = Math.max(7, size - dens / 8);
-  let i = 0;
-
-  for (let y = imageBox.y + spacing; y < imageBox.y + imageBox.h - spacing; y += spacing) {
-    for (let x = imageBox.x + spacing; x < imageBox.x + imageBox.w - spacing; x += spacing) {
-      const jitterX = seededNoise(x, y, 1) * spacing * 0.55;
-      const jitterY = seededNoise(x, y, 2) * spacing * 0.55;
-      const px = Math.floor(x + jitterX);
-      const py = Math.floor(y + jitterY);
-      if (!inPhoto(px, py)) continue;
-
-      const p = py * width + px;
-      const shade = grey[p] || 255;
-      const edge = edges[p] || 0;
-      const darkness = (255 - shade) / 255;
-      const chance = 0.18 + darkness * 0.72 + Math.min(edge / 220, 0.42);
-      if (seeded01(px, py, 3) > chance * (dens / 65)) continue;
-
-      const localSize = Math.max(3, size * (0.55 + darkness * 0.9 + Math.min(edge / 260, 0.45)));
-      const weight = Math.max(0.45, Math.min(3.2, 0.45 + darkness * 2.2 + edge / 170));
-      tctx.lineWidth = mode === 'light' ? weight * 0.55 : weight;
-      tctx.strokeStyle = strokeFor(mode, shade, 1.05);
-      tctx.fillStyle = strokeFor(mode, shade, 0.95);
-
-      const toneBand = Math.floor(shade / 42);
-      const choice = (toneBand + i + Math.floor(seeded01(px, py, 4) * 5)) % 5;
-      if (choice === 0 && useDots.checked) drawDotCluster(px, py, localSize, darkness);
-      else if (choice === 1 && useSwirls.checked) drawSwirl(px, py, localSize, seeded01(px, py, 5));
-      else if (choice === 2 && useWaves.checked) drawWaves(px, py, localSize, gradientAngle(grey, width, px, py));
-      else if (choice === 3 && useHatching.checked) drawCrossHatch(px, py, localSize, gradientAngle(grey, width, px, py), darkness);
-      else if (useShapes.checked) drawShape(px, py, localSize, seeded01(px, py, 6));
-      i++;
-    }
-  }
-}
-
-function drawFineDetail(edges, grey, width, height, mode) {
-  const like = Number(likeness.value);
-  const threshold = 95 - like * 0.45;
-  tctx.lineCap = 'round';
-  for (let y = Math.floor(imageBox.y) + 1; y < imageBox.y + imageBox.h - 1; y += 3) {
-    for (let x = Math.floor(imageBox.x) + 1; x < imageBox.x + imageBox.w - 1; x += 3) {
-      const p = y * width + x;
-      const edge = edges[p];
-      if (edge < threshold) continue;
-      const shade = grey[p] || 255;
-      tctx.strokeStyle = strokeFor(mode, shade, 0.8);
-      tctx.lineWidth = mode === 'light' ? 0.45 : 0.75;
-      const a = gradientAngle(grey, width, x, y) + Math.PI / 2;
-      tctx.beginPath();
-      tctx.moveTo(x - Math.cos(a) * 2.5, y - Math.sin(a) * 2.5);
-      tctx.lineTo(x + Math.cos(a) * 2.5, y + Math.sin(a) * 2.5);
-      tctx.stroke();
-    }
-  }
-}
-
-function seeded01(x, y, salt) {
-  let n = Math.sin(x * 12.9898 + y * 78.233 + salt * 37.719) * 43758.5453;
-  return n - Math.floor(n);
-}
-function seededNoise(x, y, salt) { return seeded01(x, y, salt) * 2 - 1; }
-
-function drawDotCluster(x, y, s, darkness) {
-  const count = Math.floor(2 + darkness * 9);
-  for (let k = 0; k < count; k++) {
-    const a = seeded01(x + k, y, 10) * Math.PI * 2;
-    const r = seeded01(x, y + k, 11) * s * 0.55;
-    const dot = 0.8 + darkness * 2.6;
-    tctx.beginPath();
-    tctx.arc(x + Math.cos(a) * r, y + Math.sin(a) * r, dot, 0, Math.PI * 2);
-    tctx.fill();
-  }
-}
-
-function drawSwirl(x, y, s, seed) {
-  const turns = 2.4 + seed * 2.2;
-  tctx.beginPath();
-  for (let a = 0; a < Math.PI * turns; a += 0.2) {
-    const r = s * a / (Math.PI * turns) * 0.55;
-    const px = x + Math.cos(a + seed * 6) * r;
-    const py = y + Math.sin(a + seed * 6) * r;
-    if (a === 0) tctx.moveTo(px, py); else tctx.lineTo(px, py);
-  }
-  tctx.stroke();
-}
-
-function drawWaves(x, y, s, angle) {
-  tctx.save();
-  tctx.translate(x, y);
-  tctx.rotate(angle + Math.PI / 2);
-  const lines = 3;
-  for (let j = -1; j <= lines; j++) {
-    tctx.beginPath();
-    for (let i = -s / 2; i <= s / 2; i += 2) {
-      const yy = (j - 1) * s / 5 + Math.sin(i / 3) * 2;
-      if (i === -s / 2) tctx.moveTo(i, yy); else tctx.lineTo(i, yy);
-    }
-    tctx.stroke();
-  }
-  tctx.restore();
-}
-
-function drawCrossHatch(x, y, s, angle, darkness) {
-  const reps = Math.floor(2 + darkness * 5);
-  tctx.save();
-  tctx.translate(x, y);
-  tctx.rotate(angle);
-  for (let k = -reps; k <= reps; k++) {
-    tctx.beginPath();
-    tctx.moveTo(-s * 0.45, k * 3);
-    tctx.lineTo(s * 0.45, k * 3);
-    tctx.stroke();
-  }
-  if (darkness > 0.45) {
-    tctx.rotate(Math.PI / 2);
-    for (let k = -reps; k <= reps; k += 2) {
-      tctx.beginPath();
-      tctx.moveTo(-s * 0.38, k * 3);
-      tctx.lineTo(s * 0.38, k * 3);
-      tctx.stroke();
-    }
-  }
-  tctx.restore();
-}
-
-function drawShape(x, y, s, seed) {
-  const sides = 3 + Math.floor(seed * 4);
-  tctx.beginPath();
-  for (let n = 0; n < sides; n++) {
-    const a = (Math.PI * 2 * n) / sides + seed * Math.PI;
-    const px = x + Math.cos(a) * s * 0.38;
-    const py = y + Math.sin(a) * s * 0.38;
-    if (n === 0) tctx.moveTo(px, py); else tctx.lineTo(px, py);
-  }
-  tctx.closePath();
-  tctx.stroke();
-}
-
-function clearDrawing() {
-  dctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-}
-
-function printTemplate(mode) {
-  if (!sourceImage) {
-    setStatus('Please upload a photo first.');
-    return;
-  }
-  generateTemplate(mode);
-  setTimeout(() => window.print(), 150);
-}
-
-function downloadPNG() {
-  const merged = document.createElement('canvas');
-  merged.width = templateCanvas.width;
-  merged.height = templateCanvas.height;
-  const mctx = merged.getContext('2d');
-  mctx.drawImage(templateCanvas, 0, 0);
-  mctx.drawImage(drawCanvas, 0, 0);
-  const link = document.createElement('a');
-  link.download = `doodle-art-template-${lastMode}.png`;
-  link.href = merged.toDataURL('image/png');
-  link.click();
-}
-
-function getPointerPos(e) {
+function getCanvasPoint(e) {
   const rect = drawCanvas.getBoundingClientRect();
-  const touch = e.touches ? e.touches[0] : e;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
   return {
-    x: (touch.clientX - rect.left) * (drawCanvas.width / rect.width),
-    y: (touch.clientY - rect.top) * (drawCanvas.height / rect.height)
+    x: (clientX - rect.left) * drawCanvas.width / rect.width,
+    y: (clientY - rect.top) * drawCanvas.height / rect.height
   };
 }
 
 function startDraw(e) {
-  if (!drawCanvas.classList.contains('drawing-enabled')) return;
+  if (currentMode !== 'online') return;
+  e.preventDefault();
   drawing = true;
-  const p = getPointerPos(e);
-  dctx.beginPath();
-  dctx.moveTo(p.x, p.y);
-  e.preventDefault();
+  lastPoint = getCanvasPoint(e);
 }
-
 function moveDraw(e) {
-  if (!drawing) return;
-  const p = getPointerPos(e);
-  dctx.lineWidth = Number(penSize.value);
-  dctx.lineCap = 'round';
-  dctx.strokeStyle = '#111';
-  dctx.lineTo(p.x, p.y);
-  dctx.stroke();
+  if (!drawing || currentMode !== 'online') return;
   e.preventDefault();
+  const p = getCanvasPoint(e);
+  drawCtx.strokeStyle = 'rgba(0,0,0,.9)';
+  drawCtx.lineWidth = 4;
+  drawCtx.lineCap = 'round';
+  drawCtx.beginPath();
+  drawCtx.moveTo(lastPoint.x, lastPoint.y);
+  drawCtx.lineTo(p.x, p.y);
+  drawCtx.stroke();
+  lastPoint = p;
 }
-
-function endDraw() { drawing = false; }
-
-document.getElementById('lightBtn').addEventListener('click', () => generateTemplate('light'));
-document.getElementById('darkBtn').addEventListener('click', () => generateTemplate('dark'));
-document.getElementById('onlineBtn').addEventListener('click', () => generateTemplate('online'));
-document.getElementById('printLightBtn').addEventListener('click', () => printTemplate('light'));
-document.getElementById('printDarkBtn').addEventListener('click', () => printTemplate('dark'));
-document.getElementById('clearDrawingBtn').addEventListener('click', clearDrawing);
-document.getElementById('downloadBtn').addEventListener('click', downloadPNG);
+function endDraw() { drawing = false; lastPoint = null; }
 
 drawCanvas.addEventListener('mousedown', startDraw);
 drawCanvas.addEventListener('mousemove', moveDraw);

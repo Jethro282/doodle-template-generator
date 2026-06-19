@@ -3,58 +3,64 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Doodle Art Template Generator</title>
+  <title>Doodle Template Generator - Hybrid Mode</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="hero">
-    <h1>Doodle Art Template Generator</h1>
-    <p>Upload a photo and turn it into a dense doodle-art template with dots, swirls, waves, hatching and shapes.</p>
-  </header>
+  <main class="wrap">
+    <header class="hero">
+      <h1>Doodle Template Generator</h1>
+      <p>Upload a photo and generate a hybrid doodle-art template using outlines, tonal dots, swirls, hatching and shapes.</p>
+    </header>
 
-  <main class="app">
-    <section class="panel controls">
-      <h2>1. Upload photo</h2>
-      <input id="photoInput" type="file" accept="image/*" />
-      <p class="small">Your photo stays in your browser. Nothing is uploaded or stored.</p>
+    <section class="panel">
+      <label class="uploadBox">
+        <input id="photoInput" type="file" accept="image/*" />
+        <span>Choose photo</span>
+      </label>
 
-      <h2>2. Doodle settings</h2>
-      <label>Photo likeness <input id="likeness" type="range" min="1" max="100" value="75" /></label>
-      <label>Doodle density <input id="density" type="range" min="1" max="100" value="70" /></label>
-      <label>Pattern size <input id="patternSize" type="range" min="8" max="34" value="18" /></label>
-
-      <div class="checks">
-        <label><input id="useDots" type="checkbox" checked /> Dots</label>
-        <label><input id="useSwirls" type="checkbox" checked /> Swirls</label>
-        <label><input id="useWaves" type="checkbox" checked /> Waves</label>
-        <label><input id="useHatching" type="checkbox" checked /> Hatching</label>
-        <label><input id="useShapes" type="checkbox" checked /> Shapes</label>
+      <div class="controls">
+        <label>
+          Detail
+          <input id="detailSlider" type="range" min="1" max="5" value="4" />
+        </label>
+        <label>
+          Doodle density
+          <input id="densitySlider" type="range" min="1" max="5" value="4" />
+        </label>
+        <label>
+          Outline strength
+          <input id="outlineSlider" type="range" min="1" max="5" value="3" />
+        </label>
+        <label>
+          Style
+          <select id="styleSelect">
+            <option value="hybrid">Hybrid doodle</option>
+            <option value="stipple">Mostly dots</option>
+            <option value="zentangle">Swirls & hatching</option>
+          </select>
+        </label>
       </div>
 
-      <h2>3. Choose output</h2>
-      <div class="button-grid">
+      <div class="buttons">
         <button id="lightBtn">Generate light template</button>
-        <button id="printLightBtn">Print light</button>
         <button id="darkBtn">Generate dark template</button>
-        <button id="printDarkBtn">Print dark</button>
-        <button id="onlineBtn" class="wide">Generate online drawing template</button>
-        <button id="clearDrawingBtn" class="wide secondary">Clear online drawing</button>
+        <button id="onlineBtn">Generate online template</button>
+        <button id="printBtn" disabled>Print</button>
+        <button id="downloadBtn" disabled>Download PNG</button>
+        <button id="clearDrawingBtn" disabled>Clear drawing</button>
       </div>
 
-      <h2>Drawing tools</h2>
-      <label>Pen size <input id="penSize" type="range" min="1" max="20" value="4" /></label>
-      <button id="downloadBtn" class="wide">Download PNG</button>
+      <p class="hint">Tip: this version uses the photo's light and dark areas to decide how many doodles to place. Darker areas get more/larger marks; lighter areas stay more open.</p>
     </section>
 
-    <section class="panel workspace">
-      <div class="canvas-wrap">
-        <canvas id="templateCanvas" width="900" height="1200"></canvas>
+    <section class="canvasPanel">
+      <div class="canvasWrap">
+        <canvas id="outputCanvas" width="900" height="1200"></canvas>
         <canvas id="drawCanvas" width="900" height="1200"></canvas>
       </div>
-      <p id="status">Upload a photo to begin.</p>
     </section>
   </main>
-
   <script src="app.js"></script>
 </body>
 </html>
