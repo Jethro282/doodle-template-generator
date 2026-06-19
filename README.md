@@ -1,15 +1,6 @@
-# Doodle Template Generator - Hybrid Mode v4
+# Doodle Template Generator - Hybrid Mode
 
-A browser-based GitHub Pages MVP that turns a photo into a hybrid doodle-art template.
-
-## What this version does
-
-- Uses the uploaded photo's tonal values to create a doodle density map
-- Dark areas receive more/larger doodles
-- Light areas receive fewer/lighter doodles
-- Adds faint structural outlines on top
-- Generates light, dark and online drawing templates
-- Runs fully in the browser with HTML, CSS and JavaScript
+A browser-based GitHub Pages MVP that converts an uploaded photo into a hybrid doodle-art template.
 
 ## Files
 
@@ -18,8 +9,15 @@ A browser-based GitHub Pages MVP that turns a photo into a hybrid doodle-art tem
 - `app.js`
 - `README.md`
 
-## GitHub Pages
+## How it works
 
-Upload these files to the root of a public GitHub repository, then enable Pages from:
+The app runs fully in the browser. It creates:
 
-Settings → Pages → Deploy from a branch → main → /root
+- a visible original photo preview
+- a generated doodle template preview
+- light template mode
+- dark template mode
+- online drawing mode
+- print/download buttons
+
+No photos are uploaded or stored on a server.

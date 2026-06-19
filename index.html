@@ -10,30 +10,27 @@
   <main class="wrap">
     <header class="hero">
       <h1>Doodle Template Generator</h1>
-      <p>Upload a photo and generate a hybrid doodle-art template using outlines, tonal dots, swirls, hatching and shapes.</p>
+      <p>Upload a photo and rebuild it as a hybrid doodle-art template using tone, dots, swirls, hatching and faint outlines.</p>
     </header>
 
     <section class="panel">
       <label class="uploadBox">
         <input id="photoInput" type="file" accept="image/*" />
-        <span>Choose photo</span>
+        <span id="uploadText">Choose photo</span>
       </label>
+      <p id="status" class="status">No photo uploaded yet.</p>
 
       <div class="controls">
-        <label>
-          Detail
+        <label>Detail
           <input id="detailSlider" type="range" min="1" max="5" value="4" />
         </label>
-        <label>
-          Doodle density
+        <label>Doodle density
           <input id="densitySlider" type="range" min="1" max="5" value="4" />
         </label>
-        <label>
-          Outline strength
+        <label>Outline strength
           <input id="outlineSlider" type="range" min="1" max="5" value="3" />
         </label>
-        <label>
-          Style
+        <label>Style
           <select id="styleSelect">
             <option value="hybrid">Hybrid doodle</option>
             <option value="stipple">Mostly dots</option>
@@ -43,21 +40,26 @@
       </div>
 
       <div class="buttons">
-        <button id="lightBtn">Generate light template</button>
-        <button id="darkBtn">Generate dark template</button>
-        <button id="onlineBtn">Generate online template</button>
+        <button id="lightBtn" disabled>Generate light template</button>
+        <button id="darkBtn" disabled>Generate dark template</button>
+        <button id="onlineBtn" disabled>Generate online template</button>
         <button id="printBtn" disabled>Print</button>
         <button id="downloadBtn" disabled>Download PNG</button>
         <button id="clearDrawingBtn" disabled>Clear drawing</button>
       </div>
-
-      <p class="hint">Tip: this version uses the photo's light and dark areas to decide how many doodles to place. Darker areas get more/larger marks; lighter areas stay more open.</p>
     </section>
 
-    <section class="canvasPanel">
-      <div class="canvasWrap">
-        <canvas id="outputCanvas" width="900" height="1200"></canvas>
-        <canvas id="drawCanvas" width="900" height="1200"></canvas>
+    <section class="previewGrid">
+      <div class="canvasCard">
+        <h2>Original photo</h2>
+        <canvas id="sourceCanvas" width="600" height="800"></canvas>
+      </div>
+      <div class="canvasCard">
+        <h2>Doodle template</h2>
+        <div class="canvasWrap" id="canvasWrap">
+          <canvas id="outputCanvas" width="900" height="1200"></canvas>
+          <canvas id="drawCanvas" width="900" height="1200"></canvas>
+        </div>
       </div>
     </section>
   </main>
