@@ -3,28 +3,31 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Doodle Template Generator</title>
+  <title>Doodle Art Template Generator</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="hero">
-    <h1>Doodle Template Generator</h1>
-    <p>Upload a photo, generate a doodle-style tracing template, print it, or draw over it online.</p>
+    <h1>Doodle Art Template Generator</h1>
+    <p>Upload a photo and turn it into a dense doodle-art template with dots, swirls, waves, hatching and shapes.</p>
   </header>
 
   <main class="app">
     <section class="panel controls">
       <h2>1. Upload photo</h2>
       <input id="photoInput" type="file" accept="image/*" />
-      <p class="small">Your photo stays in your browser. Nothing is uploaded to a server.</p>
+      <p class="small">Your photo stays in your browser. Nothing is uploaded or stored.</p>
 
-      <h2>2. Adjust doodle settings</h2>
-      <label>Detail level <input id="detail" type="range" min="20" max="120" value="60" /></label>
-      <label>Pattern amount <input id="patternAmount" type="range" min="0" max="100" value="35" /></label>
+      <h2>2. Doodle settings</h2>
+      <label>Photo likeness <input id="likeness" type="range" min="1" max="100" value="75" /></label>
+      <label>Doodle density <input id="density" type="range" min="1" max="100" value="70" /></label>
+      <label>Pattern size <input id="patternSize" type="range" min="8" max="34" value="18" /></label>
 
       <div class="checks">
         <label><input id="useDots" type="checkbox" checked /> Dots</label>
         <label><input id="useSwirls" type="checkbox" checked /> Swirls</label>
+        <label><input id="useWaves" type="checkbox" checked /> Waves</label>
+        <label><input id="useHatching" type="checkbox" checked /> Hatching</label>
         <label><input id="useShapes" type="checkbox" checked /> Shapes</label>
       </div>
 

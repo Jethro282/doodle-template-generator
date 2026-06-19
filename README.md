@@ -1,25 +1,16 @@
-# Doodle Template Generator
+# Doodle Art Template Generator
 
-A browser-based doodle/tracing template generator.
+A static GitHub Pages app that converts an uploaded photo into a doodle-art style template.
 
-## What it does
+## Features
 
-- Upload a photo
+- Upload a photo in the browser
 - Generate a light printable template
 - Generate a dark printable tracing template
-- Generate an online drawing template for mouse, stylus, or tablet
-- Download the result as a PNG
-
-## Privacy
-
-The image processing happens inside the user's browser. Photos are not uploaded to a server.
+- Generate an online drawing template
+- Download PNG
+- No server upload or storage
 
 ## GitHub Pages
 
-This project is designed to work on GitHub Pages because it only uses HTML, CSS, and JavaScript.
-
-## Files
-
-- `index.html` - page structure
-- `style.css` - layout and styling
-- `app.js` - image processing, printing, and drawing tools
+Upload `index.html`, `style.css`, `app.js`, and `README.md` to your repository root, then enable GitHub Pages from the `main` branch and `/root` folder.
