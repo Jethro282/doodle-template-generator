@@ -3,360 +3,305 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Doodle Halftone Template Generator</title>
+  <title>Doodle Halftone Generator - Lines & Waves</title>
   <style>
-    :root { --bg:#f7f4ef; --card:#fff; --ink:#222; --muted:#666; --border:#ddd; --accent:#111; }
-    * { box-sizing:border-box; }
-    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--ink); }
-    header { padding:28px 18px 10px; text-align:center; }
-    h1 { margin:0 0 8px; font-size:clamp(26px,4vw,42px); }
-    .tagline { margin:0 auto; max-width:780px; color:var(--muted); line-height:1.5; }
-    main { width:min(1180px, 94vw); margin:18px auto 40px; display:grid; grid-template-columns: 340px 1fr; gap:18px; }
-    @media (max-width:900px){ main { grid-template-columns:1fr; } }
-    .card { background:var(--card); border:1px solid var(--border); border-radius:18px; box-shadow:0 8px 22px rgba(0,0,0,.06); padding:18px; }
-    .controls { position:sticky; top:12px; align-self:start; }
-    label { display:block; font-weight:700; margin:15px 0 7px; }
-    input[type="file"], select, button { width:100%; font:inherit; }
-    input[type="range"] { width:100%; }
-    select, button, input[type="file"] { border:1px solid var(--border); border-radius:12px; padding:10px; background:#fff; }
-    button { cursor:pointer; background:var(--accent); color:white; border-color:var(--accent); font-weight:800; margin-top:10px; }
-    button.secondary { background:#fff; color:var(--ink); border-color:var(--border); }
+    :root { --bg:#f6f1e8; --card:#fffaf2; --ink:#202020; --muted:#6b645b; --line:#d9cbb8; --accent:#2f2f2f; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Arial, Helvetica, sans-serif; background:var(--bg); color:var(--ink); }
+    header { padding: 28px 18px 12px; text-align:center; }
+    h1 { margin:0 0 8px; font-size: clamp(26px, 4vw, 44px); }
+    p { color:var(--muted); line-height:1.45; }
+    main { max-width:1180px; margin:0 auto; padding:18px; }
+    .panel { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px; box-shadow:0 8px 24px rgba(0,0,0,.05); }
+    .controls { display:grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap:14px; margin-bottom:18px; }
+    label { display:block; font-weight:700; margin-bottom:6px; }
+    input[type="range"], select, input[type="file"] { width:100%; }
+    .control-note { font-size:12px; color:var(--muted); margin-top:4px; }
+    .buttons { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0 18px; }
+    button { border:none; background:var(--accent); color:white; padding:11px 15px; border-radius:999px; cursor:pointer; font-weight:700; }
+    button.secondary { background:#766b5b; }
     button:disabled { opacity:.45; cursor:not-allowed; }
-    .value { color:var(--muted); font-weight:600; float:right; }
-    .hint { font-size:13px; color:var(--muted); line-height:1.35; margin:4px 0 0; }
-    .preview-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-    @media (max-width:900px){ .preview-grid { grid-template-columns:1fr; } }
-    .panel h2 { margin:0 0 12px; font-size:18px; }
-    canvas { width:100%; max-height:72vh; background:white; border:1px dashed #ccc; border-radius:14px; display:block; object-fit:contain; }
-    .status { margin-top:12px; padding:10px; border-radius:12px; background:#f1f1f1; color:#444; font-size:14px; line-height:1.35; }
-    .mini { font-size:12px; color:#777; margin-top:14px; }
-    .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .stage { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    .canvas-wrap { background:white; border:1px solid var(--line); border-radius:14px; padding:12px; min-height:300px; display:flex; align-items:center; justify-content:center; overflow:auto; }
+    canvas { max-width:100%; height:auto; background:white; }
+    h2 { margin:0 0 10px; font-size:18px; }
+    #status { font-weight:700; color:#4a4035; margin:8px 0 0; }
+    @media (max-width:800px) { .stage { grid-template-columns:1fr; } }
+    @media print {
+      body * { visibility:hidden; }
+      #outputCanvas, #outputCanvas * { visibility:visible; }
+      #outputCanvas { position:absolute; left:0; top:0; width:100vw !important; height:auto !important; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Doodle Halftone Template Generator</h1>
-    <p class="tagline">Upload a photo and rebuild it using traceable doodle marks — circles, loops, spirals, waves and figure-8s. Darker photo areas get larger/stronger marks; lighter areas stay more open.</p>
-  </header>
-
-  <main>
-    <section class="card controls">
-      <label for="fileInput">Upload photo</label>
-      <input id="fileInput" type="file" accept="image/*" />
-      <p class="hint">Everything runs in your browser. The photo is not uploaded anywhere.</p>
-
-      <label for="templateType">Template type</label>
-      <select id="templateType">
-        <option value="light">Light trace-over template</option>
-        <option value="dark">Dark tracing template</option>
-      </select>
-
-      <label for="markStyle">Doodle style</label>
-      <select id="markStyle">
-        <option value="mixed">Mixed doodles</option>
-        <option value="circles">Circles only</option>
-        <option value="loops">Loops / figure-8s</option>
-        <option value="spirals">Spirals</option>
-        <option value="waves">Waves / squiggles</option>
-      </select>
-
-      <label for="cellSize">Traceability / mark spacing <span id="cellSizeVal" class="value">24</span></label>
-      <input id="cellSize" type="range" min="14" max="42" value="24" step="2" />
-      <p class="hint">Higher = fewer, larger, easier-to-trace marks. Lower = more detail.</p>
-
-      <label for="contrast">Photo contrast <span id="contrastVal" class="value">1.25</span></label>
-      <input id="contrast" type="range" min="0.7" max="2.2" value="1.25" step="0.05" />
-
-      <label for="outlineStrength">Faint outline support <span id="outlineVal" class="value">35%</span></label>
-      <input id="outlineStrength" type="range" min="0" max="100" value="35" step="5" />
-      <p class="hint">Adds a soft photo outline underneath so the final template still resembles the original.</p>
-
-      <label for="darkCutoff">White-space control <span id="cutoffVal" class="value">18%</span></label>
-      <input id="darkCutoff" type="range" min="0" max="45" value="18" step="1" />
-      <p class="hint">Higher = ignores lighter areas and keeps the page cleaner.</p>
-
-      <button id="generateBtn" disabled>Generate doodle template</button>
-      <div class="row">
-        <button id="printBtn" class="secondary" disabled>Print</button>
-        <button id="downloadBtn" class="secondary" disabled>Download PNG</button>
+<header>
+  <h1>Doodle Halftone Generator</h1>
+  <p>Upload a photo and rebuild it using clean, traceable lines and waves.</p>
+</header>
+<main>
+  <section class="panel">
+    <div class="controls">
+      <div>
+        <label for="photoInput">Choose photo</label>
+        <input id="photoInput" type="file" accept="image/*" />
+        <div class="control-note">Your image stays in your browser.</div>
       </div>
+      <div>
+        <label for="cellSize">Doodle spacing: <span id="cellSizeVal">14</span></label>
+        <input id="cellSize" type="range" min="8" max="28" value="14" />
+        <div class="control-note">Higher = cleaner and less dense.</div>
+      </div>
+      <div>
+        <label for="contrast">Photo contrast: <span id="contrastVal">1.35</span></label>
+        <input id="contrast" type="range" min="80" max="220" value="135" />
+        <div class="control-note">Higher pushes light/dark areas apart.</div>
+      </div>
+      <div>
+        <label for="outlineStrength">Faint outline: <span id="outlineVal">25</span>%</label>
+        <input id="outlineStrength" type="range" min="0" max="70" value="25" />
+        <div class="control-note">Helps preserve shape without making it messy.</div>
+      </div>
+      <div>
+        <label for="templateTone">Template type</label>
+        <select id="templateTone">
+          <option value="dark">Dark template for tracing</option>
+          <option value="light">Light template to draw over</option>
+        </select>
+      </div>
+      <div>
+        <label for="styleMode">Stroke style</label>
+        <select id="styleMode">
+          <option value="mixed">Mixed lines and waves</option>
+          <option value="waves">Waves only</option>
+          <option value="lines">Lines only</option>
+        </select>
+      </div>
+    </div>
+    <div class="buttons">
+      <button id="generateBtn" disabled>Generate template</button>
+      <button id="printBtn" class="secondary" disabled>Print</button>
+      <button id="downloadBtn" class="secondary" disabled>Download PNG</button>
       <button id="clearBtn" class="secondary" disabled>Clear</button>
-
-      <div id="status" class="status">Choose a photo to begin.</div>
-      <p class="mini">Tip: portraits, pets, objects and high-contrast images work best. Very busy backgrounds can confuse the template.</p>
-    </section>
-
-    <section class="preview-grid">
-      <div class="card panel">
+    </div>
+    <div id="status">Upload a photo to begin.</div>
+    <div class="stage" style="margin-top:16px;">
+      <div>
         <h2>Original photo</h2>
-        <canvas id="sourceCanvas" width="900" height="1100"></canvas>
+        <div class="canvas-wrap"><canvas id="sourceCanvas"></canvas></div>
       </div>
-      <div class="card panel">
-        <h2>Doodle template</h2>
-        <canvas id="outputCanvas" width="900" height="1100"></canvas>
+      <div>
+        <h2>Line & wave template</h2>
+        <div class="canvas-wrap"><canvas id="outputCanvas"></canvas></div>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
+</main>
+<script>
+(() => {
+  const photoInput = document.getElementById('photoInput');
+  const sourceCanvas = document.getElementById('sourceCanvas');
+  const outputCanvas = document.getElementById('outputCanvas');
+  const sctx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+  const octx = outputCanvas.getContext('2d');
+  const generateBtn = document.getElementById('generateBtn');
+  const printBtn = document.getElementById('printBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const status = document.getElementById('status');
+  const cellSize = document.getElementById('cellSize');
+  const contrast = document.getElementById('contrast');
+  const outlineStrength = document.getElementById('outlineStrength');
+  const templateTone = document.getElementById('templateTone');
+  const styleMode = document.getElementById('styleMode');
+  const cellSizeVal = document.getElementById('cellSizeVal');
+  const contrastVal = document.getElementById('contrastVal');
+  const outlineVal = document.getElementById('outlineVal');
+  let imgLoaded = false;
+  let lastImage = null;
 
-  <script>
-    const fileInput = document.getElementById('fileInput');
-    const sourceCanvas = document.getElementById('sourceCanvas');
-    const outputCanvas = document.getElementById('outputCanvas');
-    const sctx = sourceCanvas.getContext('2d', { willReadFrequently: true });
-    const octx = outputCanvas.getContext('2d');
+  function updateLabels(){
+    cellSizeVal.textContent = cellSize.value;
+    contrastVal.textContent = (contrast.value / 100).toFixed(2);
+    outlineVal.textContent = outlineStrength.value;
+  }
+  [cellSize, contrast, outlineStrength].forEach(el => el.addEventListener('input', updateLabels));
+  updateLabels();
 
-    const generateBtn = document.getElementById('generateBtn');
-    const printBtn = document.getElementById('printBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const statusBox = document.getElementById('status');
-
-    const cellSize = document.getElementById('cellSize');
-    const contrast = document.getElementById('contrast');
-    const outlineStrength = document.getElementById('outlineStrength');
-    const darkCutoff = document.getElementById('darkCutoff');
-    const markStyle = document.getElementById('markStyle');
-    const templateType = document.getElementById('templateType');
-
-    const cellSizeVal = document.getElementById('cellSizeVal');
-    const contrastVal = document.getElementById('contrastVal');
-    const outlineVal = document.getElementById('outlineVal');
-    const cutoffVal = document.getElementById('cutoffVal');
-
-    let loadedImage = null;
-    let imageReady = false;
-
-    function updateLabels(){
-      cellSizeVal.textContent = cellSize.value;
-      contrastVal.textContent = Number(contrast.value).toFixed(2);
-      outlineVal.textContent = outlineStrength.value + '%';
-      cutoffVal.textContent = darkCutoff.value + '%';
-    }
-    [cellSize, contrast, outlineStrength, darkCutoff].forEach(el => el.addEventListener('input', updateLabels));
-    updateLabels();
-
-    function setStatus(msg){ statusBox.textContent = msg; }
-
-    function fitCanvasToImage(img){
-      const maxW = 1000;
-      const maxH = 1300;
-      let w = img.naturalWidth || img.width;
-      let h = img.naturalHeight || img.height;
-      const scale = Math.min(maxW / w, maxH / h, 1);
-      w = Math.round(w * scale);
-      h = Math.round(h * scale);
-      sourceCanvas.width = w; sourceCanvas.height = h;
-      outputCanvas.width = w; outputCanvas.height = h;
-      sctx.clearRect(0,0,w,h);
-      sctx.fillStyle = 'white'; sctx.fillRect(0,0,w,h);
-      sctx.drawImage(img, 0, 0, w, h);
-      octx.fillStyle = 'white'; octx.fillRect(0,0,w,h);
-    }
-
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      const url = URL.createObjectURL(file);
+  photoInput.addEventListener('change', e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
       const img = new Image();
       img.onload = () => {
-        loadedImage = img;
-        imageReady = true;
-        fitCanvasToImage(img);
+        lastImage = img;
+        drawSource(img);
+        imgLoaded = true;
         generateBtn.disabled = false;
         clearBtn.disabled = false;
         printBtn.disabled = true;
         downloadBtn.disabled = true;
-        setStatus('Photo loaded. Click Generate doodle template.');
-        URL.revokeObjectURL(url);
+        status.textContent = 'Photo loaded. Click Generate template.';
       };
-      img.onerror = () => setStatus('Sorry mate, that image could not be loaded. Try another file.');
-      img.src = url;
-    });
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
 
-    function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
-    function rand(seed){
-      // deterministic-ish random based on seed
-      const x = Math.sin(seed * 9999) * 43758.5453;
-      return x - Math.floor(x);
+  function drawSource(img){
+    const maxW = 900, maxH = 1100;
+    let w = img.width, h = img.height;
+    const scale = Math.min(maxW / w, maxH / h, 1);
+    w = Math.round(w * scale); h = Math.round(h * scale);
+    sourceCanvas.width = outputCanvas.width = w;
+    sourceCanvas.height = outputCanvas.height = h;
+    sctx.clearRect(0,0,w,h);
+    sctx.drawImage(img, 0, 0, w, h);
+    octx.clearRect(0,0,w,h);
+    octx.fillStyle = 'white'; octx.fillRect(0,0,w,h);
+  }
+
+  function brightness(data, x, y, w, h) {
+    x = Math.max(0, Math.min(w-1, x|0)); y = Math.max(0, Math.min(h-1, y|0));
+    const i = (y*w+x)*4;
+    return 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
+  }
+  function adjustTone(b, c){
+    let v = (b - 128) * c + 128;
+    return Math.max(0, Math.min(255, v));
+  }
+  function rand(seed){
+    let x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  }
+
+  function drawLine(x, y, len, angle, thickness, alpha) {
+    const dx = Math.cos(angle) * len/2;
+    const dy = Math.sin(angle) * len/2;
+    octx.globalAlpha = alpha;
+    octx.lineWidth = thickness;
+    octx.lineCap = 'round';
+    octx.beginPath();
+    octx.moveTo(x - dx, y - dy);
+    octx.lineTo(x + dx, y + dy);
+    octx.stroke();
+  }
+  function drawWave(x, y, len, angle, amp, waves, thickness, alpha) {
+    octx.save();
+    octx.translate(x, y);
+    octx.rotate(angle);
+    octx.globalAlpha = alpha;
+    octx.lineWidth = thickness;
+    octx.lineCap = 'round';
+    octx.beginPath();
+    const steps = 20;
+    for (let i=0; i<=steps; i++) {
+      const t = i/steps;
+      const px = (t - .5) * len;
+      const py = Math.sin(t * Math.PI * 2 * waves) * amp;
+      if (i===0) octx.moveTo(px, py); else octx.lineTo(px, py);
     }
+    octx.stroke();
+    octx.restore();
+  }
 
-    function getGrey(data, w, h, x, y){
-      x = clamp(Math.round(x),0,w-1); y = clamp(Math.round(y),0,h-1);
-      const i = (y*w + x)*4;
-      return 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
-    }
-
-    function averageDarkness(data, w, h, cx, cy, radius, contrastBoost){
-      let total = 0, count = 0;
-      const step = Math.max(2, Math.floor(radius/3));
-      for (let yy = cy-radius; yy <= cy+radius; yy += step) {
-        for (let xx = cx-radius; xx <= cx+radius; xx += step) {
-          if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
-          const g = getGrey(data,w,h,xx,yy);
-          let d = 1 - (g/255);
-          d = clamp((d - 0.5) * contrastBoost + 0.5, 0, 1);
-          total += d; count++;
-        }
+  function drawFaintEdges(data, w, h, amount) {
+    if (amount <= 0) return;
+    const img = octx.createImageData(w,h);
+    const out = img.data;
+    for (let y=1; y<h-1; y+=1) {
+      for (let x=1; x<w-1; x+=1) {
+        const gx = brightness(data,x+1,y,w,h) - brightness(data,x-1,y,w,h);
+        const gy = brightness(data,x,y+1,w,h) - brightness(data,x,y-1,w,h);
+        const mag = Math.sqrt(gx*gx + gy*gy);
+        const a = mag > 36 ? Math.min(80, mag) * (amount/100) : 0;
+        const i=(y*w+x)*4;
+        out[i]=0; out[i+1]=0; out[i+2]=0; out[i+3]=a;
       }
-      return count ? total/count : 0;
     }
+    octx.putImageData(img,0,0);
+  }
 
-    function drawCircle(ctx,x,y,r,alpha,lw){
-      ctx.globalAlpha = alpha; ctx.lineWidth = lw; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke();
-    }
-    function drawLoop(ctx,x,y,r,alpha,lw,rot){
-      ctx.save(); ctx.translate(x,y); ctx.rotate(rot); ctx.globalAlpha=alpha; ctx.lineWidth=lw;
-      ctx.beginPath(); ctx.ellipse(-r*0.45,0,r*0.55,r*0.85,0,0,Math.PI*2); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(r*0.45,0,r*0.55,r*0.85,0,0,Math.PI*2); ctx.stroke();
-      ctx.restore();
-    }
-    function drawSpiral(ctx,x,y,r,alpha,lw,rot){
-      ctx.save(); ctx.translate(x,y); ctx.rotate(rot); ctx.globalAlpha=alpha; ctx.lineWidth=lw; ctx.beginPath();
-      const turns = 2.2;
-      for(let i=0;i<70;i++){
-        const t = i/69 * Math.PI*2*turns;
-        const rr = (i/69) * r;
-        const px = Math.cos(t)*rr, py = Math.sin(t)*rr;
-        if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
-      }
-      ctx.stroke(); ctx.restore();
-    }
-    function drawWave(ctx,x,y,r,alpha,lw,rot){
-      ctx.save(); ctx.translate(x,y); ctx.rotate(rot); ctx.globalAlpha=alpha; ctx.lineWidth=lw; ctx.beginPath();
-      const len = r*2.2;
-      for(let i=0;i<=36;i++){
-        const t = i/36;
-        const px = -len/2 + t*len;
-        const py = Math.sin(t*Math.PI*3) * r*0.35;
-        if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
-      }
-      ctx.stroke(); ctx.restore();
-    }
-
-    function drawChosenMark(ctx, style, x,y,r,alpha,lw,seed){
-      ctx.strokeStyle = '#111'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      const rot = rand(seed+3) * Math.PI;
-      let chosen = style;
-      if (style === 'mixed') {
-        const n = rand(seed+11);
-        chosen = n < .28 ? 'circles' : n < .52 ? 'loops' : n < .75 ? 'spirals' : 'waves';
-      }
-      if (chosen === 'circles') drawCircle(ctx,x,y,r,alpha,lw);
-      else if (chosen === 'loops') drawLoop(ctx,x,y,r,alpha,lw,rot);
-      else if (chosen === 'spirals') drawSpiral(ctx,x,y,r,alpha,lw,rot);
-      else drawWave(ctx,x,y,r,alpha,lw,rot);
-    }
-
-    function drawSoftOutlines(srcData, w, h, strength, lightMode){
-      if (strength <= 0) return;
-      octx.save();
+  function generate(){
+    if (!imgLoaded) return;
+    status.textContent = 'Generating clean line-and-wave doodle template...';
+    setTimeout(() => {
+      const w = sourceCanvas.width, h = sourceCanvas.height;
+      const src = sctx.getImageData(0,0,w,h).data;
+      const step = parseInt(cellSize.value,10);
+      const c = parseInt(contrast.value,10) / 100;
+      const light = templateTone.value === 'light';
+      octx.setTransform(1,0,0,1,0,0);
+      octx.globalAlpha = 1;
+      octx.fillStyle = 'white'; octx.fillRect(0,0,w,h);
       octx.strokeStyle = '#111';
-      octx.lineCap = 'round';
-      octx.lineJoin = 'round';
-      octx.globalAlpha = (lightMode ? 0.11 : 0.25) * (strength/100);
-      const step = 3;
-      for (let y=2; y<h-2; y+=step) {
-        for (let x=2; x<w-2; x+=step) {
-          const gx = Math.abs(getGrey(srcData,w,h,x+1,y)-getGrey(srcData,w,h,x-1,y));
-          const gy = Math.abs(getGrey(srcData,w,h,x,y+1)-getGrey(srcData,w,h,x,y-1));
-          const edge = gx + gy;
-          if (edge > 42) {
-            octx.lineWidth = edge > 90 ? 1.15 : 0.7;
-            octx.beginPath();
-            octx.moveTo(x-1,y);
-            octx.lineTo(x+1,y);
-            octx.stroke();
+
+      // faint outline first, then halftone strokes
+      drawFaintEdges(src, w, h, parseInt(outlineStrength.value,10));
+      octx.strokeStyle = '#111';
+
+      let seed = 1;
+      for (let y=step/2; y<h; y+=step) {
+        for (let x=step/2; x<w; x+=step) {
+          const b0 = brightness(src, x, y, w, h);
+          const b = adjustTone(b0, c);
+          const darkness = 1 - (b / 255);
+          // skip very light cells so the template stays traceable
+          if (darkness < 0.12) continue;
+          const r1 = rand(seed++), r2 = rand(seed++), r3 = rand(seed++);
+          const jitter = step * 0.22;
+          const px = x + (r1 - .5) * jitter;
+          const py = y + (r2 - .5) * jitter;
+          const len = step * (0.45 + darkness * 1.25);
+          const thick = Math.max(0.7, Math.min(3.2, 0.6 + darkness * 2.4));
+          const alpha = light ? (0.18 + darkness * 0.28) : (0.45 + darkness * 0.5);
+          // orientation follows local gradient where possible, otherwise deterministic variation
+          const gx = brightness(src, x+3, y, w, h) - brightness(src, x-3, y, w, h);
+          const gy = brightness(src, x, y+3, w, h) - brightness(src, x, y-3, w, h);
+          let angle = Math.atan2(gy, gx) + Math.PI/2;
+          angle += (r3 - .5) * 0.85;
+          const mode = styleMode.value;
+          const useWave = mode === 'waves' || (mode === 'mixed' && (seed % 3 !== 0));
+          if (useWave) {
+            const amp = step * (0.08 + darkness * 0.16);
+            const waves = darkness > 0.65 ? 2 : 1;
+            drawWave(px, py, len, angle, amp, waves, thick, alpha);
+          } else {
+            drawLine(px, py, len, angle, thick, alpha);
+          }
+          // darkest areas get a second simple stroke, still traceable
+          if (darkness > 0.72 && step >= 10) {
+            const angle2 = angle + Math.PI/2 + (rand(seed++)-.5)*0.4;
+            const len2 = step * (0.35 + darkness * 0.75);
+            if (mode === 'waves') drawWave(px, py, len2, angle2, step*0.08, 1, Math.max(0.7, thick*.75), alpha*.7);
+            else drawLine(px, py, len2, angle2, Math.max(0.7, thick*.75), alpha*.7);
           }
         }
       }
-      octx.restore();
-    }
+      octx.globalAlpha = 1;
+      printBtn.disabled = false;
+      downloadBtn.disabled = false;
+      status.textContent = 'Done. This version uses only clean lines and waves.';
+    }, 30);
+  }
 
-    function generate(){
-      if (!imageReady) return;
-      setStatus('Generating doodle halftone template...');
-      window.setTimeout(() => {
-        fitCanvasToImage(loadedImage);
-        const w = sourceCanvas.width, h = sourceCanvas.height;
-        const imgData = sctx.getImageData(0,0,w,h);
-        const data = imgData.data;
-        const lightMode = templateType.value === 'light';
-
-        octx.clearRect(0,0,w,h);
-        octx.fillStyle = 'white'; octx.fillRect(0,0,w,h);
-
-        drawSoftOutlines(data, w, h, Number(outlineStrength.value), lightMode);
-
-        const cell = Number(cellSize.value);
-        const boost = Number(contrast.value);
-        const cutoff = Number(darkCutoff.value)/100;
-        const style = markStyle.value;
-        const alphaBase = lightMode ? 0.22 : 0.82;
-        const alphaExtra = lightMode ? 0.18 : 0.18;
-        const maxR = cell * 0.47;
-        const minR = cell * 0.14;
-        let count = 0;
-
-        // Offset alternate rows so marks feel more organic but remain traceable.
-        for (let y = cell*0.65; y < h - cell*0.4; y += cell) {
-          const row = Math.floor(y/cell);
-          const offset = row % 2 ? cell*0.5 : 0;
-          for (let x = cell*0.65 + offset; x < w - cell*0.4; x += cell) {
-            const seed = x*0.017 + y*0.031 + row;
-            const jx = (rand(seed)-0.5) * cell * 0.20;
-            const jy = (rand(seed+5)-0.5) * cell * 0.20;
-            const d = averageDarkness(data,w,h,x+jx,y+jy,cell*0.45,boost);
-            if (d < cutoff) continue;
-
-            // Reduce marks in very light sections to keep it drawable.
-            const keepChance = clamp((d - cutoff) / (1 - cutoff), 0, 1);
-            if (rand(seed+19) > (0.35 + keepChance*0.65)) continue;
-
-            const tonal = clamp((d - cutoff) / (1 - cutoff), 0, 1);
-            const r = minR + tonal * (maxR-minR);
-            const lw = lightMode ? (0.8 + tonal*1.2) : (1.1 + tonal*2.6);
-            const alpha = clamp(alphaBase + tonal*alphaExtra, 0, 1);
-            drawChosenMark(octx, style, x+jx, y+jy, r, alpha, lw, seed);
-            count++;
-          }
-        }
-
-        printBtn.disabled = false;
-        downloadBtn.disabled = false;
-        setStatus(`Generated ${count} traceable doodle marks. Try increasing spacing if it is too dense, or lowering spacing if it needs more likeness.`);
-      }, 40);
-    }
-
-    generateBtn.addEventListener('click', generate);
-    [cellSize, contrast, outlineStrength, darkCutoff, markStyle, templateType].forEach(el => {
-      el.addEventListener('change', () => { if (imageReady) generate(); });
-    });
-
-    printBtn.addEventListener('click', () => {
-      const dataUrl = outputCanvas.toDataURL('image/png');
-      const win = window.open('', '_blank');
-      win.document.write(`<!doctype html><html><head><title>Doodle Template</title><style>body{margin:0;padding:20px;text-align:center}img{max-width:100%;height:auto}@media print{body{padding:0}img{width:100%;}}</style></head><body><img src="${dataUrl}"></body></html>`);
-      win.document.close();
-      win.focus();
-      setTimeout(() => win.print(), 250);
-    });
-
-    downloadBtn.addEventListener('click', () => {
-      const a = document.createElement('a');
-      a.href = outputCanvas.toDataURL('image/png');
-      a.download = 'doodle-halftone-template.png';
-      a.click();
-    });
-
-    clearBtn.addEventListener('click', () => {
-      loadedImage = null; imageReady = false; fileInput.value = '';
-      sctx.clearRect(0,0,sourceCanvas.width,sourceCanvas.height);
-      octx.clearRect(0,0,outputCanvas.width,outputCanvas.height);
-      sctx.fillStyle='white'; sctx.fillRect(0,0,sourceCanvas.width,sourceCanvas.height);
-      octx.fillStyle='white'; octx.fillRect(0,0,outputCanvas.width,outputCanvas.height);
-      generateBtn.disabled = true; printBtn.disabled = true; downloadBtn.disabled = true; clearBtn.disabled = true;
-      setStatus('Choose a photo to begin.');
-    });
-  </script>
+  generateBtn.addEventListener('click', generate);
+  printBtn.addEventListener('click', () => window.print());
+  downloadBtn.addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.download = 'doodle-lines-waves-template.png';
+    a.href = outputCanvas.toDataURL('image/png');
+    a.click();
+  });
+  clearBtn.addEventListener('click', () => {
+    imgLoaded = false; lastImage = null; photoInput.value = '';
+    sctx.clearRect(0,0,sourceCanvas.width,sourceCanvas.height);
+    octx.clearRect(0,0,outputCanvas.width,outputCanvas.height);
+    generateBtn.disabled = true; printBtn.disabled = true; downloadBtn.disabled = true; clearBtn.disabled = true;
+    status.textContent = 'Upload a photo to begin.';
+  });
+})();
+</script>
 </body>
 </html>
