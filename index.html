@@ -3,466 +3,86 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Doodle Studio - Lines & Waves</title>
+  <title>Doodle Studio v8</title>
   <style>
-    :root { --bg:#f6f1e8; --card:#fffaf2; --ink:#202020; --muted:#6b645b; --line:#d9cbb8; --accent:#2f2f2f; }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family: Arial, Helvetica, sans-serif; background:var(--bg); color:var(--ink); }
-    header { padding: 28px 18px 12px; text-align:center; }
-    h1 { margin:0 0 8px; font-size: clamp(26px, 4vw, 44px); }
-    p { color:var(--muted); line-height:1.45; }
-    main { max-width:1280px; margin:0 auto; padding:18px; }
-    .panel { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px; box-shadow:0 8px 24px rgba(0,0,0,.05); }
-    .controls { display:grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap:14px; margin-bottom:18px; }
-    label { display:block; font-weight:700; margin-bottom:6px; }
-    input[type="range"], select, input[type="file"] { width:100%; }
-    .control-note { font-size:12px; color:var(--muted); margin-top:4px; }
-    .buttons { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0 18px; }
-    button { border:none; background:var(--accent); color:white; padding:11px 15px; border-radius:999px; cursor:pointer; font-weight:700; }
-    button.secondary { background:#766b5b; }
-    button:disabled { opacity:.45; cursor:not-allowed; }
-    .stage { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
-    .stage3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; margin-top:16px; }
-    .canvas-wrap { background:white; border:1px solid var(--line); border-radius:14px; padding:12px; min-height:300px; display:flex; align-items:center; justify-content:center; overflow:auto; position:relative; }
-    canvas { max-width:100%; height:auto; background:white; touch-action:none; }
-    .draw-stack { position:relative; display:inline-block; line-height:0; }
-    .draw-stack canvas { position:absolute; left:0; top:0; }
-    .draw-stack canvas:first-child { position:relative; }
-    h2 { margin:0 0 10px; font-size:18px; }
-    #status { font-weight:700; color:#4a4035; margin:8px 0 0; }
-    .mini-tools { display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin:10px 0 0; }
-    .mini-tools button { padding:9px 12px; }
-    .hint { font-size:12px; color:var(--muted); margin-top:8px; }
-    @media (max-width:1050px) { .stage3 { grid-template-columns:1fr; } }
-    @media (max-width:800px) { .stage { grid-template-columns:1fr; } }
-    @media print {
-      body * { visibility:hidden; }
-      #outputCanvas, #outputCanvas * { visibility:visible; }
-      #outputCanvas { position:absolute; left:0; top:0; width:100vw !important; height:auto !important; }
-    }
+    :root{--bg:#f6f3ee;--card:#fff;--ink:#20242a;--muted:#667085;--border:#d8d1c7;--accent:#1f2937;}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+    .wrap{max-width:1180px;margin:28px auto;padding:0 18px}
+    .hero{margin-bottom:18px}.hero h1{margin:0;font-size:34px}.hero p{margin:6px 0 0;color:var(--muted)}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
+    .controls{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:16px;align-items:end;margin-bottom:16px}
+    label{font-weight:700;font-size:14px;display:block;margin-bottom:6px} input[type=file],select{width:100%} input[type=range]{width:100%}
+    .hint{font-size:12px;color:var(--muted);margin-top:4px}.value{font-weight:800;color:#334155}
+    .buttons{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 16px} button{border:0;border-radius:999px;background:var(--accent);color:#fff;padding:10px 16px;font-weight:800;cursor:pointer} button.secondary{background:#59606a} button:disabled{opacity:.4;cursor:not-allowed}
+    .status{font-weight:700;margin:8px 0 16px;color:#374151}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.panel h2,.trace h2{font-size:18px;margin:0 0 8px}
+    .canvasBox{border:1px solid var(--border);border-radius:16px;min-height:420px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:10px}
+    canvas{max-width:100%;height:auto;background:white;border-radius:10px}.trace{margin-top:16px}.trace .canvasBox{min-height:520px;position:relative;align-items:flex-start}.traceStack{position:relative;display:inline-block;touch-action:none}.traceStack canvas{position:absolute;left:0;top:0;max-width:100%;}.traceStack canvas:first-child{position:relative}.drawTools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 0}.drawTools input{width:120px}
+    @media(max-width:900px){.controls{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.canvasBox{min-height:320px}}
   </style>
 </head>
 <body>
-<header>
-  <h1>Doodle Studio</h1>
-  <p>Upload a photo and rebuild it using clean, traceable lines and waves.</p>
-</header>
-<main>
-  <section class="panel">
-    <div class="controls">
-      <div>
-        <label for="photoInput">Choose photo</label>
-        <input id="photoInput" type="file" accept="image/*" />
-        <div class="control-note">Your image stays in your browser.</div>
+  <main class="wrap">
+    <section class="hero"><h1>Doodle Studio</h1><p>Turn a photo into a clean, traceable lines-and-waves doodle template.</p></section>
+    <section class="card">
+      <div class="controls">
+        <div><label>Choose photo</label><input id="photoInput" type="file" accept="image/*"><div class="hint">Your image stays in your browser.</div></div>
+        <div><label>Grid size: <span id="gridVal" class="value">40</span></label><input id="gridSize" type="range" min="24" max="70" value="40"><div class="hint">Higher = more detail, lower = cleaner.</div></div>
+        <div><label>Stroke strength: <span id="strengthVal" class="value">70</span>%</label><input id="strokeStrength" type="range" min="35" max="100" value="70"><div class="hint">Controls line length/thickness.</div></div>
+        <div><label>Faint outline: <span id="outlineVal" class="value">35</span>%</label><input id="outlineStrength" type="range" min="0" max="80" value="35"><div class="hint">Keeps recognisable edges.</div></div>
+        <div><label>Template type</label><select id="templateType"><option value="dark">Dark template for tracing</option><option value="light">Light template to draw over</option></select></div>
       </div>
-      <div>
-        <label for="cellSize">Doodle spacing: <span id="cellSizeVal">14</span></label>
-        <input id="cellSize" type="range" min="8" max="28" value="14" />
-        <div class="control-note">Higher = cleaner and less dense.</div>
+      <div class="buttons">
+        <button id="genPrintable">Generate printable template</button>
+        <button id="genOnline">Generate online trace template</button>
+        <button id="printBtn" class="secondary">Print</button>
+        <button id="downloadBtn" class="secondary">Download PNG</button>
+        <button id="clearBtn" class="secondary">Clear</button>
       </div>
-      <div>
-        <label for="contrast">Photo contrast: <span id="contrastVal">1.35</span></label>
-        <input id="contrast" type="range" min="80" max="220" value="135" />
-        <div class="control-note">Higher pushes light/dark areas apart.</div>
+      <div id="status" class="status">Choose a photo to begin.</div>
+      <div class="grid">
+        <div class="panel"><h2>Original Photo</h2><div class="canvasBox"><canvas id="originalCanvas" width="520" height="520"></canvas></div></div>
+        <div class="panel"><h2>Printable Template</h2><div class="canvasBox"><canvas id="templateCanvas" width="520" height="520"></canvas></div></div>
       </div>
-      <div>
-        <label for="outlineStrength">Faint outline: <span id="outlineVal">25</span>%</label>
-        <input id="outlineStrength" type="range" min="0" max="70" value="25" />
-        <div class="control-note">Helps preserve shape without making it messy.</div>
-      </div>
-      <div>
-        <label for="templateTone">Template type</label>
-        <select id="templateTone">
-          <option value="dark">Dark template for tracing</option>
-          <option value="light">Light template to draw over</option>
-        </select>
-      </div>
-      <div>
-        <label for="styleMode">Stroke style</label>
-        <select id="styleMode">
-          <option value="mixed">Mixed lines and waves</option>
-          <option value="waves">Waves only</option>
-          <option value="lines">Lines only</option>
-        </select>
-      </div>
-    </div>
-    <div class="buttons">
-      <button id="generateBtn" disabled>Generate printable template</button>
-      <button id="onlineBtn" disabled>Generate online trace template</button>
-      <button id="printBtn" class="secondary" disabled>Print</button>
-      <button id="downloadBtn" class="secondary" disabled>Download PNG</button>
-      <button id="clearBtn" class="secondary" disabled>Clear</button>
-    </div>
-    <div id="status">Upload a photo to begin.</div>
-
-    <div class="stage3">
-      <div>
-        <h2>Original photo</h2>
-        <div class="canvas-wrap"><canvas id="sourceCanvas"></canvas></div>
-      </div>
-      <div>
-        <h2>Printable template</h2>
-        <div class="canvas-wrap"><canvas id="outputCanvas"></canvas></div>
-      </div>
-      <div>
-        <h2>Online trace canvas</h2>
-        <div class="canvas-wrap">
-          <div class="draw-stack" id="drawStack">
-            <canvas id="guideCanvas"></canvas>
-            <canvas id="drawCanvas"></canvas>
-          </div>
+      <div class="trace">
+        <h2>Online Trace Studio</h2>
+        <div class="canvasBox"><div id="traceStack" class="traceStack"><canvas id="guideCanvas" width="1000" height="650"></canvas><canvas id="drawCanvas" width="1000" height="650"></canvas></div></div>
+        <div class="drawTools">
+          <button id="penBtn">Pen</button><button id="eraserBtn" class="secondary">Eraser</button><button id="undoBtn" class="secondary">Undo</button><button id="clearDrawBtn" class="secondary">Clear drawing</button><button id="saveArtBtn" class="secondary">Save artwork</button>
+          <label style="margin:0">Pen size <input id="penSize" type="range" min="1" max="16" value="4"></label>
         </div>
-        <div class="mini-tools">
-          <div>
-            <label for="penSize">Pen size: <span id="penSizeVal">3</span></label>
-            <input id="penSize" type="range" min="1" max="18" value="3" />
-          </div>
-          <div>
-            <label for="toolMode">Tool</label>
-            <select id="toolMode">
-              <option value="pen">Pen</option>
-              <option value="eraser">Eraser</option>
-            </select>
-          </div>
-          <button id="undoDrawBtn" class="secondary" disabled>Undo</button>
-          <button id="clearDrawBtn" class="secondary" disabled>Clear drawing</button>
-          <button id="saveArtBtn" class="secondary" disabled>Save artwork</button>
-        </div>
-        <div class="hint">Generate the online template, then trace over it with your mouse, stylus, or tablet pen.</div>
       </div>
-    </div>
-  </section>
-</main>
+    </section>
+  </main>
 <script>
-(() => {
-  const photoInput = document.getElementById('photoInput');
-  const sourceCanvas = document.getElementById('sourceCanvas');
-  const outputCanvas = document.getElementById('outputCanvas');
-  const guideCanvas = document.getElementById('guideCanvas');
-  const drawCanvas = document.getElementById('drawCanvas');
-  const drawStack = document.getElementById('drawStack');
-  const sctx = sourceCanvas.getContext('2d', { willReadFrequently: true });
-  const octx = outputCanvas.getContext('2d');
-  const gctx = guideCanvas.getContext('2d');
-  const dctx = drawCanvas.getContext('2d');
-  const generateBtn = document.getElementById('generateBtn');
-  const onlineBtn = document.getElementById('onlineBtn');
-  const printBtn = document.getElementById('printBtn');
-  const downloadBtn = document.getElementById('downloadBtn');
-  const clearBtn = document.getElementById('clearBtn');
-  const undoDrawBtn = document.getElementById('undoDrawBtn');
-  const clearDrawBtn = document.getElementById('clearDrawBtn');
-  const saveArtBtn = document.getElementById('saveArtBtn');
-  const status = document.getElementById('status');
-  const cellSize = document.getElementById('cellSize');
-  const contrast = document.getElementById('contrast');
-  const outlineStrength = document.getElementById('outlineStrength');
-  const templateTone = document.getElementById('templateTone');
-  const styleMode = document.getElementById('styleMode');
-  const penSize = document.getElementById('penSize');
-  const toolMode = document.getElementById('toolMode');
-  const cellSizeVal = document.getElementById('cellSizeVal');
-  const contrastVal = document.getElementById('contrastVal');
-  const outlineVal = document.getElementById('outlineVal');
-  const penSizeVal = document.getElementById('penSizeVal');
-  let imgLoaded = false;
-  let drawingReady = false;
-  let drawing = false;
-  let lastPoint = null;
-  const history = [];
-
-  function updateLabels(){
-    cellSizeVal.textContent = cellSize.value;
-    contrastVal.textContent = (contrast.value / 100).toFixed(2);
-    outlineVal.textContent = outlineStrength.value;
-    penSizeVal.textContent = penSize.value;
-  }
-  [cellSize, contrast, outlineStrength, penSize].forEach(el => el.addEventListener('input', updateLabels));
-  updateLabels();
-
-  photoInput.addEventListener('change', e => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        drawSource(img);
-        imgLoaded = true;
-        drawingReady = false;
-        generateBtn.disabled = false;
-        onlineBtn.disabled = false;
-        clearBtn.disabled = false;
-        printBtn.disabled = true;
-        downloadBtn.disabled = true;
-        disableDrawingButtons();
-        history.length = 0;
-        status.textContent = 'Photo loaded. Generate a printable or online trace template.';
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  function drawSource(img){
-    const maxW = 900, maxH = 1100;
-    let w = img.width, h = img.height;
-    const scale = Math.min(maxW / w, maxH / h, 1);
-    w = Math.round(w * scale); h = Math.round(h * scale);
-    [sourceCanvas, outputCanvas, guideCanvas, drawCanvas].forEach(c => { c.width = w; c.height = h; });
-    drawStack.style.width = w + 'px';
-    drawStack.style.height = h + 'px';
-    sctx.clearRect(0,0,w,h);
-    sctx.drawImage(img, 0, 0, w, h);
-    [octx, gctx, dctx].forEach(ctx => { ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,w,h); });
-    octx.fillStyle = 'white'; octx.fillRect(0,0,w,h);
-    gctx.fillStyle = 'white'; gctx.fillRect(0,0,w,h);
-  }
-
-  function brightness(data, x, y, w, h) {
-    x = Math.max(0, Math.min(w-1, x|0)); y = Math.max(0, Math.min(h-1, y|0));
-    const i = (y*w+x)*4;
-    return 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
-  }
-  function adjustTone(b, c){
-    let v = (b - 128) * c + 128;
-    return Math.max(0, Math.min(255, v));
-  }
-  function rand(seed){
-    let x = Math.sin(seed) * 10000;
-    return x - Math.floor(x);
-  }
-
-  function drawLine(ctx, x, y, len, angle, thickness, alpha) {
-    const dx = Math.cos(angle) * len/2;
-    const dy = Math.sin(angle) * len/2;
-    ctx.globalAlpha = alpha;
-    ctx.lineWidth = thickness;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(x - dx, y - dy);
-    ctx.lineTo(x + dx, y + dy);
-    ctx.stroke();
-  }
-  function drawWave(ctx, x, y, len, angle, amp, waves, thickness, alpha) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(angle);
-    ctx.globalAlpha = alpha;
-    ctx.lineWidth = thickness;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    const steps = 20;
-    for (let i=0; i<=steps; i++) {
-      const t = i/steps;
-      const px = (t - .5) * len;
-      const py = Math.sin(t * Math.PI * 2 * waves) * amp;
-      if (i===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  function drawFaintEdges(ctx, data, w, h, amount) {
-    if (amount <= 0) return;
-    const img = ctx.createImageData(w,h);
-    const out = img.data;
-    for (let y=1; y<h-1; y+=1) {
-      for (let x=1; x<w-1; x+=1) {
-        const gx = brightness(data,x+1,y,w,h) - brightness(data,x-1,y,w,h);
-        const gy = brightness(data,x,y+1,w,h) - brightness(data,x,y-1,w,h);
-        const mag = Math.sqrt(gx*gx + gy*gy);
-        const a = mag > 36 ? Math.min(80, mag) * (amount/100) : 0;
-        const i=(y*w+x)*4;
-        out[i]=0; out[i+1]=0; out[i+2]=0; out[i+3]=a;
-      }
-    }
-    ctx.putImageData(img,0,0);
-  }
-
-  function renderTemplate(targetCtx, opts={}){
-    const w = sourceCanvas.width, h = sourceCanvas.height;
-    const src = sctx.getImageData(0,0,w,h).data;
-    const step = parseInt(cellSize.value,10);
-    const c = parseInt(contrast.value,10) / 100;
-    const light = opts.forceLight || templateTone.value === 'light';
-    const guide = !!opts.guide;
-    targetCtx.setTransform(1,0,0,1,0,0);
-    targetCtx.globalAlpha = 1;
-    targetCtx.fillStyle = 'white'; targetCtx.fillRect(0,0,w,h);
-    targetCtx.strokeStyle = '#111';
-    const edgeAmount = guide ? Math.min(35, parseInt(outlineStrength.value,10)) : parseInt(outlineStrength.value,10);
-    drawFaintEdges(targetCtx, src, w, h, edgeAmount);
-    targetCtx.strokeStyle = '#111';
-    let seed = 1;
-    for (let y=step/2; y<h; y+=step) {
-      for (let x=step/2; x<w; x+=step) {
-        const b0 = brightness(src, x, y, w, h);
-        const b = adjustTone(b0, c);
-        const darkness = 1 - (b / 255);
-        if (darkness < 0.12) continue;
-        const r1 = rand(seed++), r2 = rand(seed++), r3 = rand(seed++);
-        const jitter = step * 0.22;
-        const px = x + (r1 - .5) * jitter;
-        const py = y + (r2 - .5) * jitter;
-        const len = step * (0.45 + darkness * 1.25);
-        const thick = Math.max(0.7, Math.min(3.2, 0.6 + darkness * 2.4));
-        const alpha = guide ? (0.10 + darkness * 0.22) : (light ? (0.18 + darkness * 0.28) : (0.45 + darkness * 0.5));
-        const gx = brightness(src, x+3, y, w, h) - brightness(src, x-3, y, w, h);
-        const gy = brightness(src, x, y+3, w, h) - brightness(src, x, y-3, w, h);
-        let angle = Math.atan2(gy, gx) + Math.PI/2;
-        angle += (r3 - .5) * 0.85;
-        const mode = styleMode.value;
-        const useWave = mode === 'waves' || (mode === 'mixed' && (seed % 3 !== 0));
-        if (useWave) {
-          const amp = step * (0.08 + darkness * 0.16);
-          const waves = darkness > 0.65 ? 2 : 1;
-          drawWave(targetCtx, px, py, len, angle, amp, waves, thick, alpha);
-        } else {
-          drawLine(targetCtx, px, py, len, angle, thick, alpha);
-        }
-        if (!guide && darkness > 0.72 && step >= 10) {
-          const angle2 = angle + Math.PI/2 + (rand(seed++)-.5)*0.4;
-          const len2 = step * (0.35 + darkness * 0.75);
-          if (mode === 'waves') drawWave(targetCtx, px, py, len2, angle2, step*0.08, 1, Math.max(0.7, thick*.75), alpha*.7);
-          else drawLine(targetCtx, px, py, len2, angle2, Math.max(0.7, thick*.75), alpha*.7);
-        }
-      }
-    }
-    targetCtx.globalAlpha = 1;
-  }
-
-  function generatePrintable(){
-    if (!imgLoaded) return;
-    status.textContent = 'Generating printable line-and-wave template...';
-    setTimeout(() => {
-      renderTemplate(octx);
-      printBtn.disabled = false;
-      downloadBtn.disabled = false;
-      status.textContent = 'Printable template ready.';
-    }, 30);
-  }
-
-  function generateOnline(){
-    if (!imgLoaded) return;
-    status.textContent = 'Generating online trace template...';
-    setTimeout(() => {
-      renderTemplate(guideCanvas.getContext('2d'), { guide:true, forceLight:true });
-      dctx.clearRect(0,0,drawCanvas.width,drawCanvas.height);
-      history.length = 0;
-      pushHistory();
-      drawingReady = true;
-      clearDrawBtn.disabled = false;
-      saveArtBtn.disabled = false;
-      undoDrawBtn.disabled = true;
-      status.textContent = 'Online trace template ready. Draw over the pale guide.';
-    }, 30);
-  }
-
-  function canvasPoint(evt){
-    const rect = drawCanvas.getBoundingClientRect();
-    const scaleX = drawCanvas.width / rect.width;
-    const scaleY = drawCanvas.height / rect.height;
-    return { x:(evt.clientX - rect.left) * scaleX, y:(evt.clientY - rect.top) * scaleY };
-  }
-  function pushHistory(){
-    if (!drawingReady && history.length) return;
-    try {
-      history.push(dctx.getImageData(0,0,drawCanvas.width,drawCanvas.height));
-      if (history.length > 25) history.shift();
-      undoDrawBtn.disabled = history.length <= 1;
-    } catch(e) {}
-  }
-  function startDraw(evt){
-    if (!drawingReady) return;
-    drawing = true;
-    lastPoint = canvasPoint(evt);
-    dctx.lineCap = 'round';
-    dctx.lineJoin = 'round';
-    drawCanvas.setPointerCapture(evt.pointerId);
-  }
-  function moveDraw(evt){
-    if (!drawing || !lastPoint) return;
-    const p = canvasPoint(evt);
-    dctx.globalAlpha = 1;
-    dctx.lineWidth = parseInt(penSize.value,10);
-    if (toolMode.value === 'eraser') {
-      dctx.globalCompositeOperation = 'destination-out';
-      dctx.strokeStyle = 'rgba(0,0,0,1)';
-    } else {
-      dctx.globalCompositeOperation = 'source-over';
-      dctx.strokeStyle = '#111';
-    }
-    dctx.beginPath();
-    dctx.moveTo(lastPoint.x, lastPoint.y);
-    dctx.lineTo(p.x, p.y);
-    dctx.stroke();
-    lastPoint = p;
-  }
-  function endDraw(evt){
-    if (!drawing) return;
-    drawing = false;
-    lastPoint = null;
-    dctx.globalCompositeOperation = 'source-over';
-    pushHistory();
-  }
-
-  drawCanvas.addEventListener('pointerdown', startDraw);
-  drawCanvas.addEventListener('pointermove', moveDraw);
-  drawCanvas.addEventListener('pointerup', endDraw);
-  drawCanvas.addEventListener('pointercancel', endDraw);
-  drawCanvas.addEventListener('pointerleave', endDraw);
-
-  function disableDrawingButtons(){
-    undoDrawBtn.disabled = true; clearDrawBtn.disabled = true; saveArtBtn.disabled = true;
-  }
-
-  generateBtn.addEventListener('click', generatePrintable);
-  onlineBtn.addEventListener('click', generateOnline);
-  printBtn.addEventListener('click', () => window.print());
-  downloadBtn.addEventListener('click', () => {
-    const a = document.createElement('a');
-    a.download = 'doodle-studio-printable-template.png';
-    a.href = outputCanvas.toDataURL('image/png');
-    a.click();
-  });
-  undoDrawBtn.addEventListener('click', () => {
-    if (history.length <= 1) return;
-    history.pop();
-    dctx.putImageData(history[history.length-1],0,0);
-    undoDrawBtn.disabled = history.length <= 1;
-  });
-  clearDrawBtn.addEventListener('click', () => {
-    if (!drawingReady) return;
-    dctx.clearRect(0,0,drawCanvas.width,drawCanvas.height);
-    history.length = 0;
-    pushHistory();
-  });
-  saveArtBtn.addEventListener('click', () => {
-    if (!drawingReady) return;
-    const combined = document.createElement('canvas');
-    combined.width = drawCanvas.width; combined.height = drawCanvas.height;
-    const cctx = combined.getContext('2d');
-    cctx.fillStyle = 'white'; cctx.fillRect(0,0,combined.width,combined.height);
-    cctx.drawImage(guideCanvas,0,0);
-    cctx.drawImage(drawCanvas,0,0);
-    const a = document.createElement('a');
-    a.download = 'doodle-studio-online-artwork.png';
-    a.href = combined.toDataURL('image/png');
-    a.click();
-  });
-  clearBtn.addEventListener('click', () => {
-    imgLoaded = false; drawingReady = false; photoInput.value = '';
-    [sctx,octx,gctx,dctx].forEach((ctx, idx) => {
-      const c = [sourceCanvas, outputCanvas, guideCanvas, drawCanvas][idx];
-      ctx.clearRect(0,0,c.width,c.height);
-    });
-    history.length = 0;
-    generateBtn.disabled = true; onlineBtn.disabled = true; printBtn.disabled = true; downloadBtn.disabled = true; clearBtn.disabled = true;
-    disableDrawingButtons();
-    status.textContent = 'Upload a photo to begin.';
-  });
-})();
+const $=id=>document.getElementById(id);
+const photoInput=$('photoInput'), original=$('originalCanvas'), tmpl=$('templateCanvas'), guide=$('guideCanvas'), draw=$('drawCanvas');
+const octx=original.getContext('2d'), tctx=tmpl.getContext('2d'), gctx=guide.getContext('2d'), dctx=draw.getContext('2d');
+let img=null, templateReady=false, drawing=false, mode='pen', undo=[];
+function setStatus(s){$('status').textContent=s} function syncLabels(){gridVal.textContent=gridSize.value;strengthVal.textContent=strokeStrength.value;outlineVal.textContent=outlineStrength.value} ['gridSize','strokeStrength','outlineStrength'].forEach(id=>$(id).addEventListener('input',syncLabels)); syncLabels();
+function fitSize(w,h,maxW,maxH){const r=Math.min(maxW/w,maxH/h);return [Math.round(w*r),Math.round(h*r)]}
+function clearCanvas(ctx,c){ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='white';ctx.fillRect(0,0,c.width,c.height)} [original,tmpl,guide,draw].forEach(c=>clearCanvas(c.getContext('2d'),c));
+photoInput.addEventListener('change',e=>{const f=e.target.files[0]; if(!f)return; const url=URL.createObjectURL(f); img=new Image(); img.onload=()=>{drawOriginal(); generateTemplate(); URL.revokeObjectURL(url);}; img.src=url;});
+function drawOriginal(){clearCanvas(octx,original); const [w,h]=fitSize(img.width,img.height,500,500); octx.drawImage(img,(original.width-w)/2,(original.height-h)/2,w,h); setStatus('Photo loaded. Generate a printable or online template.');}
+function getImageDataSmall(size){const tmp=document.createElement('canvas'), c=tmp.getContext('2d'); tmp.width=size; tmp.height=size; c.fillStyle='white'; c.fillRect(0,0,size,size); const [w,h]=fitSize(img.width,img.height,size,size); c.drawImage(img,(size-w)/2,(size-h)/2,w,h); return c.getImageData(0,0,size,size);}
+function brightness(data,x,y,w){const i=(y*w+x)*4; return (data[i]*0.299+data[i+1]*0.587+data[i+2]*0.114)/255;}
+function drawWave(ctx,x,y,len,amp,thick,alpha){ctx.save();ctx.globalAlpha=alpha;ctx.lineWidth=thick;ctx.lineCap='round';ctx.strokeStyle='black';ctx.beginPath(); const steps=12; for(let i=0;i<=steps;i++){const px=x-len/2+len*i/steps; const py=y+Math.sin(i/steps*Math.PI*2)*amp; if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);} ctx.stroke();ctx.restore();}
+function drawLine(ctx,x,y,len,thick,alpha,angle){ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.globalAlpha=alpha;ctx.lineWidth=thick;ctx.lineCap='round';ctx.strokeStyle='black';ctx.beginPath();ctx.moveTo(-len/2,0);ctx.lineTo(len/2,0);ctx.stroke();ctx.restore();}
+function generateTemplate(){ if(!img){setStatus('Choose a photo first.'); return;} clearCanvas(tctx,tmpl); const size=parseInt(gridSize.value), strength=parseInt(strokeStrength.value)/100, outline=parseInt(outlineStrength.value)/100; const imgd=getImageDataSmall(size), data=imgd.data, cell=tmpl.width/size, type=templateType.value; const baseAlpha= type==='light'?0.22:0.95; const minDark=.08;
+  // doodle halftone: one clean mark per useful cell
+  for(let y=0;y<size;y++){for(let x=0;x<size;x++){const b=brightness(data,x,y,size); const dark=Math.max(0,1-b); if(dark<minDark) continue; const cx=x*cell+cell/2, cy=y*cell+cell/2; const len=cell*(0.25+dark*1.15)*strength; const thick=Math.max(0.7,cell*(0.018+dark*0.055)*strength); const alpha=baseAlpha*(0.18+dark*0.9); const angle=((x*13+y*7)%9-4)*0.08; if((x+y)%2===0){drawWave(tctx,cx,cy,len,cell*0.09*dark,thick,alpha);} else {drawLine(tctx,cx,cy,len,thick,alpha,angle);} }}
+  // faint edge outline
+  if(outline>0){tctx.save();tctx.globalAlpha=(type==='light'?0.16:0.35)*outline;tctx.strokeStyle='black';tctx.lineWidth=1; const src=getImageDataSmall(120), d=src.data, s=120, scale=tmpl.width/s; for(let y=1;y<s-1;y++){for(let x=1;x<s-1;x++){const b=brightness(d,x,y,s), bx=brightness(d,x+1,y,s), by=brightness(d,x,y+1,s); if(Math.abs(b-bx)+Math.abs(b-by)>.22){tctx.fillRect(x*scale,y*scale,0.7,0.7);}}} tctx.restore();}
+  templateReady=true; setStatus('Printable template generated. Use online trace to draw over a pale guide.');}
+function copyToGuide(){ if(!templateReady) generateTemplate(); clearCanvas(gctx,guide); const ratio=Math.min(guide.width/tmpl.width,guide.height/tmpl.height); const w=tmpl.width*ratio, h=tmpl.height*ratio; gctx.save();gctx.globalAlpha=.28;gctx.drawImage(tmpl,(guide.width-w)/2,(guide.height-h)/2,w,h);gctx.restore(); dctx.clearRect(0,0,draw.width,draw.height); undo=[]; setStatus('Online trace template ready. Draw over the pale guide.');}
+genPrintable.onclick=generateTemplate; genOnline.onclick=copyToGuide; clearBtn.onclick=()=>{[tmpl,guide,draw].forEach(c=>clearCanvas(c.getContext('2d'),c)); templateReady=false; setStatus('Cleared.');};
+printBtn.onclick=()=>{const win=window.open(''); win.document.write('<img style="width:100%" src="'+tmpl.toDataURL()+'">'); win.document.close(); win.print();};
+downloadBtn.onclick=()=>{const a=document.createElement('a');a.download='doodle-studio-template.png';a.href=tmpl.toDataURL();a.click();};
+function pos(e){const r=draw.getBoundingClientRect(); const p=e.touches?e.touches[0]:e; return {x:(p.clientX-r.left)*draw.width/r.width,y:(p.clientY-r.top)*draw.height/r.height};}
+function saveUndo(){try{undo.push(dctx.getImageData(0,0,draw.width,draw.height)); if(undo.length>20) undo.shift();}catch(e){}}
+draw.addEventListener('pointerdown',e=>{drawing=true;saveUndo();const p=pos(e);dctx.beginPath();dctx.moveTo(p.x,p.y);e.preventDefault();});
+draw.addEventListener('pointermove',e=>{if(!drawing)return;const p=pos(e);dctx.lineWidth=penSize.value;dctx.lineCap='round'; if(mode==='eraser'){dctx.globalCompositeOperation='destination-out';}else{dctx.globalCompositeOperation='source-over';dctx.strokeStyle='black';} dctx.lineTo(p.x,p.y);dctx.stroke();e.preventDefault();});
+window.addEventListener('pointerup',()=>{drawing=false;dctx.globalCompositeOperation='source-over';}); penBtn.onclick=()=>mode='pen'; eraserBtn.onclick=()=>mode='eraser'; undoBtn.onclick=()=>{const last=undo.pop(); if(last)dctx.putImageData(last,0,0);}; clearDrawBtn.onclick=()=>dctx.clearRect(0,0,draw.width,draw.height);
+saveArtBtn.onclick=()=>{const out=document.createElement('canvas');out.width=guide.width;out.height=guide.height;const c=out.getContext('2d');c.fillStyle='white';c.fillRect(0,0,out.width,out.height);c.drawImage(guide,0,0);c.drawImage(draw,0,0);const a=document.createElement('a');a.download='doodle-studio-artwork.png';a.href=out.toDataURL();a.click();};
 </script>
 </body>
 </html>
