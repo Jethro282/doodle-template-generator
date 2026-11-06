@@ -1,163 +1,110 @@
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Doodle Studio | Photo to Stencil</title>
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Doodle Studio | Water Shape Stencils</title>
 <style>
-* { box-sizing:border-box; }
-
-body {
-  margin:0;
-  background:#f4f6f8;
-  color:#202938;
-  font-family:Arial, sans-serif;
+:root{
+  font-family:system-ui,Segoe UI,Arial,sans-serif;
+  color:#243041;
+  background:#f3f5f8;
 }
-
-header {
-  background:white;
-  padding:24px;
+*{box-sizing:border-box}
+body{margin:0}
+header{
+  background:#fff;
+  border-bottom:1px solid #dfe5ec;
+  padding:24px 18px;
   text-align:center;
-  border-bottom:1px solid #ddd;
 }
-
-h1 { margin:0; font-size:32px; }
-header p { color:#667085; }
-
-main {
-  max-width:1450px;
-  margin:auto;
-  padding:22px;
+h1{margin:0;font-size:32px}
+header p{color:#66758a;margin:8px 0 0}
+main{max-width:1400px;margin:auto;padding:20px}
+.controls,.panel{
+  background:#fff;
+  border:1px solid #dfe5ec;
+  border-radius:16px;
+  padding:18px;
+  box-shadow:0 4px 18px #20304009;
 }
-
-.controls, .panel {
-  background:white;
-  border:1px solid #e1e5eb;
-  border-radius:15px;
-  padding:20px;
-  box-shadow:0 3px 12px #00000008;
-}
-
-.controls { margin-bottom:20px; }
-
-.actions {
+.controls{margin-bottom:18px}
+.actions{
   display:flex;
-  gap:12px;
   flex-wrap:wrap;
+  gap:10px;
   align-items:center;
 }
-
-input[type=file] {
-  padding:12px;
-  border:1px dashed #aab5c3;
+input[type=file]{
+  padding:10px;
+  border:1px dashed #9eafc1;
   border-radius:9px;
   max-width:100%;
 }
-
-button {
+button{
   border:0;
-  background:#246a73;
-  color:white;
   border-radius:9px;
-  padding:13px 18px;
-  font-size:15px;
-  font-weight:bold;
+  background:#236b73;
+  color:white;
+  padding:12px 16px;
+  font-weight:700;
   cursor:pointer;
 }
-
-button:hover { background:#194d54; }
-button:disabled { opacity:.4; cursor:not-allowed; }
-
-.secondary { background:#344054; }
-.secondary:hover { background:#202938; }
-
-.status {
-  margin-top:14px;
-  color:#246a73;
-  font-weight:bold;
-}
-
-.grid {
+button.secondary{background:#344054}
+button:disabled{opacity:.4;cursor:not-allowed}
+.status{margin-top:12px;color:#236b73;font-weight:650}
+.grid{
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:18px;
+  gap:16px;
 }
-
-.panel h2 {
-  margin:0 0 15px;
-  font-size:20px;
-}
-
-.preview {
-  background:#fff;
-  border:1px solid #ddd;
-  border-radius:10px;
-  min-height:350px;
+.panel h2{margin:0 0 12px;font-size:19px}
+.preview{
+  min-height:340px;
+  border:1px solid #dfe5ec;
+  border-radius:12px;
+  background:white;
   display:flex;
   align-items:center;
   justify-content:center;
   overflow:hidden;
 }
-
-canvas {
-  display:block;
-  max-width:100%;
-  height:auto;
-}
-
-.panelActions {
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  margin-top:15px;
-}
-
-.caption {
-  color:#667085;
-  font-size:14px;
-  line-height:1.5;
-}
-
-footer {
+canvas{display:block;max-width:100%;height:auto}
+.caption{color:#66758a;font-size:13px;line-height:1.5}
+.panelActions{display:flex;gap:8px;flex-wrap:wrap}
+footer{
   text-align:center;
-  color:#98a2b3;
   padding:25px;
+  color:#8995a5;
   font-size:13px;
 }
-
-@media(max-width:950px) {
-  .grid { grid-template-columns:1fr; }
+@media(max-width:950px){
+  .grid{grid-template-columns:1fr}
 }
 </style>
 </head>
-
 <body>
 
 <header>
   <h1>Doodle Studio</h1>
-  <p>Turn your photographs into printable tracing stencils</p>
+  <p>Turn water droplets and streaks into printable shape stencils</p>
 </header>
 
 <main>
-
 <section class="controls">
   <h2>Create your stencil</h2>
-
   <div class="actions">
-    <input type="file" id="photoInput" accept="image/*">
+    <input id="photoInput" type="file" accept="image/*">
     <button id="generateBtn" disabled>Generate Stencils</button>
     <button id="resetBtn" class="secondary">Start Again</button>
   </div>
-
   <div class="status" id="status">
     Choose a photograph to begin.
   </div>
 </section>
 
 <section class="grid">
-
   <div class="panel">
     <h2>Original Photograph</h2>
     <div class="preview">
@@ -172,11 +119,13 @@ footer {
       <canvas id="lightCanvas"></canvas>
     </div>
     <p class="caption">
-      Pale outlines for drawing over with a black pen.
+      Pale outlines to trace over with a black pen.
     </p>
     <div class="panelActions">
       <button id="printLight" disabled>Print</button>
-      <button id="saveLight" class="secondary" disabled>Download PNG</button>
+      <button id="saveLight" class="secondary" disabled>
+        Download PNG
+      </button>
     </div>
   </div>
 
@@ -190,15 +139,15 @@ footer {
     </p>
     <div class="panelActions">
       <button id="printDark" disabled>Print</button>
-      <button id="saveDark" class="secondary" disabled>Download PNG</button>
+      <button id="saveDark" class="secondary" disabled>
+        Download PNG
+      </button>
     </div>
   </div>
-
 </section>
-
 </main>
 
-<footer>Doodle Studio | Photo to Stencil</footer>
+<footer>Doodle Studio | Water Shape Stencils</footer>
 
 <script>
 "use strict";
@@ -209,240 +158,243 @@ const input = $("photoInput");
 const original = $("originalCanvas");
 const light = $("lightCanvas");
 const dark = $("darkCanvas");
-
 const generateBtn = $("generateBtn");
-const status = $("status");
 
 let sourceImage = null;
 let imageURL = null;
 
 const outputButtons = [
-  "printLight", "saveLight",
-  "printDark", "saveDark"
+  "printLight","saveLight","printDark","saveDark"
 ];
 
-function enableOutputs(enabled) {
+function status(message){
+  $("status").textContent = message;
+}
+
+function enableOutputs(enabled){
   outputButtons.forEach(id => {
     $(id).disabled = !enabled;
   });
 }
 
-function setStatus(message) {
-  status.textContent = message;
+function clamp(v,min,max){
+  return Math.max(min,Math.min(max,v));
 }
 
-function clearCanvas(canvas) {
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+function makeCanvas(w,h){
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  return c;
 }
 
-input.addEventListener("change", event => {
+input.addEventListener("change",event=>{
   const file = event.target.files[0];
-  if (!file) return;
+  if(!file)return;
 
-  if (imageURL) URL.revokeObjectURL(imageURL);
+  if(imageURL)URL.revokeObjectURL(imageURL);
 
   imageURL = URL.createObjectURL(file);
   const image = new Image();
 
-  image.onload = () => {
-    sourceImage = image;
+  image.onload=()=>{
+    sourceImage=image;
 
-    const maxDimension = 1600;
-    const scale = Math.min(
+    const maxDimension=1500;
+    const scale=Math.min(
       1,
-      maxDimension / Math.max(image.width, image.height)
+      maxDimension/Math.max(image.width,image.height)
     );
 
-    const w = Math.max(1, Math.round(image.width * scale));
-    const h = Math.max(1, Math.round(image.height * scale));
+    const w=Math.max(1,Math.round(image.width*scale));
+    const h=Math.max(1,Math.round(image.height*scale));
 
-    [original, light, dark].forEach(canvas => {
-      canvas.width = w;
-      canvas.height = h;
+    [original,light,dark].forEach(c=>{
+      c.width=w;
+      c.height=h;
     });
 
-    original.getContext("2d").drawImage(image, 0, 0, w, h);
+    original.getContext("2d").drawImage(image,0,0,w,h);
 
-    clearCanvas(light);
-    clearCanvas(dark);
     enableOutputs(false);
-
-    generateBtn.disabled = false;
-    setStatus("Photo loaded. Click Generate Stencils.");
+    generateBtn.disabled=false;
+    status("Photo loaded. Click Generate Stencils.");
   };
 
-  image.onerror = () => {
-    setStatus("Unable to open that image.");
-    generateBtn.disabled = true;
+  image.onerror=()=>{
+    status("Could not open this photograph.");
   };
 
-  image.src = imageURL;
+  image.src=imageURL;
 });
 
-// Convert the photograph into greyscale.
-function grayscale(imageData) {
-  const data = imageData.data;
-  const result = new Float32Array(data.length / 4);
+// Convert to greyscale.
+function grayscale(imageData){
+  const d=imageData.data;
+  const result=new Float32Array(d.length/4);
 
-  for (let i = 0; i < result.length; i++) {
-    const p = i * 4;
-    const alpha = data[p + 3] / 255;
-
-    const r = data[p] * alpha + 255 * (1 - alpha);
-    const g = data[p + 1] * alpha + 255 * (1 - alpha);
-    const b = data[p + 2] * alpha + 255 * (1 - alpha);
-
-    result[i] = r * 0.299 + g * 0.587 + b * 0.114;
+  for(let i=0;i<result.length;i++){
+    const p=i*4;
+    result[i]=
+      d[p]*0.299+
+      d[p+1]*0.587+
+      d[p+2]*0.114;
   }
 
   return result;
 }
 
-// Fast box blur using a summed-area image.
-// This helps separate droplets from broad shadows.
-function boxBlur(src, w, h, radius) {
-  const stride = w + 1;
-  const sums = new Float64Array((w + 1) * (h + 1));
+// Blur using an integral image.
+function boxBlur(src,w,h,radius){
+  const stride=w+1;
+  const sums=new Float64Array((w+1)*(h+1));
 
-  for (let y = 1; y <= h; y++) {
-    let rowSum = 0;
+  for(let y=1;y<=h;y++){
+    let row=0;
 
-    for (let x = 1; x <= w; x++) {
-      rowSum += src[(y - 1) * w + x - 1];
-
-      sums[y * stride + x] =
-        sums[(y - 1) * stride + x] + rowSum;
+    for(let x=1;x<=w;x++){
+      row+=src[(y-1)*w+x-1];
+      sums[y*stride+x]=sums[(y-1)*stride+x]+row;
     }
   }
 
-  const result = new Float32Array(w * h);
+  const out=new Float32Array(w*h);
 
-  for (let y = 0; y < h; y++) {
-    const y1 = Math.max(0, y - radius);
-    const y2 = Math.min(h, y + radius + 1);
+  for(let y=0;y<h;y++){
+    const y1=Math.max(0,y-radius);
+    const y2=Math.min(h,y+radius+1);
 
-    for (let x = 0; x < w; x++) {
-      const x1 = Math.max(0, x - radius);
-      const x2 = Math.min(w, x + radius + 1);
+    for(let x=0;x<w;x++){
+      const x1=Math.max(0,x-radius);
+      const x2=Math.min(w,x+radius+1);
 
-      const total =
-        sums[y2 * stride + x2]
-        - sums[y1 * stride + x2]
-        - sums[y2 * stride + x1]
-        + sums[y1 * stride + x1];
+      const total=
+        sums[y2*stride+x2]
+        -sums[y1*stride+x2]
+        -sums[y2*stride+x1]
+        +sums[y1*stride+x1];
 
-      result[y * w + x] =
-        total / ((x2 - x1) * (y2 - y1));
+      out[y*w+x]=total/((x2-x1)*(y2-y1));
     }
   }
 
-  return result;
+  return out;
 }
 
-// Enhance local detail without amplifying every
-// large shadow in the photograph.
-function enhanceDetails(gray, w, h) {
-  const small = boxBlur(gray, w, h, 1);
-  const background = boxBlur(gray, w, h, 13);
+// Identify locally darker water marks.
+// The broad background is removed before segmentation.
+function createWaterMask(gray,w,h){
+  const smooth=boxBlur(gray,w,h,1);
+  const background=boxBlur(gray,w,h,19);
 
-  const enhanced = new Float32Array(gray.length);
+  const mask=new Uint8Array(w*h);
+  const contrast=new Float32Array(w*h);
 
-  for (let i = 0; i < gray.length; i++) {
-    const localDifference = small[i] - background[i];
-
-    enhanced[i] = Math.max(
-      0,
-      Math.min(255, 128 + localDifference * 3.2)
-    );
+  for(let i=0;i<mask.length;i++){
+    contrast[i]=background[i]-smooth[i];
   }
 
-  return enhanced;
-}
+  // Find the distribution of local contrast.
+  const histogram=new Uint32Array(256);
 
-// Sobel edge detection.
-function detectEdges(data, w, h) {
-  const edges = new Float32Array(w * h);
+  for(let i=0;i<contrast.length;i++){
+    const v=clamp(Math.round(contrast[i]*3),0,255);
+    histogram[v]++;
+  }
 
-  for (let y = 1; y < h - 1; y++) {
-    for (let x = 1; x < w - 1; x++) {
-      const i = y * w + x;
+  const total=contrast.length;
+  let running=0;
+  let threshold=20;
 
-      const a = data[i - w - 1];
-      const b = data[i - w];
-      const c = data[i - w + 1];
+  // Use a high percentile to focus on darker shapes.
+  for(let i=0;i<256;i++){
+    running+=histogram[i];
 
-      const d = data[i - 1];
-      const f = data[i + 1];
-
-      const g = data[i + w - 1];
-      const hh = data[i + w];
-      const j = data[i + w + 1];
-
-      const gx = -a + c - 2*d + 2*f - g + j;
-      const gy = -a - 2*b - c + g + 2*hh + j;
-
-      edges[i] = Math.sqrt(gx*gx + gy*gy);
+    if(running>=total*0.78){
+      threshold=Math.max(12,i);
+      break;
     }
   }
 
-  return edges;
-}
-
-// Thin the edges so they are easier to trace.
-function thinEdges(edges, w, h) {
-  const output = new Float32Array(edges.length);
-
-  for (let y = 1; y < h - 1; y++) {
-    for (let x = 1; x < w - 1; x++) {
-      const i = y * w + x;
-      const value = edges[i];
-
-      if (value < 35) continue;
-
-      const horizontal =
-        value >= edges[i - 1] &&
-        value >= edges[i + 1];
-
-      const vertical =
-        value >= edges[i - w] &&
-        value >= edges[i + w];
-
-      if (horizontal || vertical) {
-        output[i] = value;
-      }
-    }
+  for(let i=0;i<mask.length;i++){
+    const value=contrast[i]*3;
+    mask[i]=value>threshold?1:0;
   }
 
-  return output;
+  return mask;
 }
 
-// Remove isolated noise while preserving small
-// droplets and thin water streaks.
-function cleanEdges(edges, w, h) {
-  const result = new Float32Array(edges.length);
+// Remove isolated pixels while keeping fine shapes.
+function cleanMask(mask,w,h){
+  const out=new Uint8Array(mask.length);
 
-  for (let y = 1; y < h - 1; y++) {
-    for (let x = 1; x < w - 1; x++) {
-      const i = y * w + x;
-      const value = edges[i];
+  for(let y=1;y<h-1;y++){
+    for(let x=1;x<w-1;x++){
+      const i=y*w+x;
+      if(!mask[i])continue;
 
-      if (value < 42) continue;
+      let neighbours=0;
 
-      let neighbours = 0;
-
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          if (dx === 0 && dy === 0) continue;
-
-          if (edges[i + dy*w + dx] > 35) {
-            neighbours++;
-          }
+      for(let dy=-1;dy<=1;dy++){
+        for(let dx=-1;dx<=1;dx++){
+          if(dx===0&&dy===0)continue;
+          neighbours+=mask[i+dy*w+dx];
         }
       }
 
-      if (neighbours >= 1 || value > 130) {
-        result[i] = value;
+      if(neighbours>=2)out[i]=1;
+    }
+  }
+
+  return out;
+}
+
+// Find connected regions.
+// Tiny noise is removed, but small droplets remain.
+function filterComponents(mask,w,h){
+  const visited=new Uint8Array(mask.length);
+  const result=new Uint8Array(mask.length);
+  const stack=[];
+
+  const neighbours=[
+    -w-1,-w,-w+1,
+    -1,1,
+    w-1,w,w+1
+  ];
+
+  for(let i=0;i<mask.length;i++){
+    if(!mask[i]||visited[i])continue;
+
+    const component=[];
+    stack.push(i);
+    visited[i]=1;
+
+    while(stack.length){
+      const current=stack.pop();
+      component.push(current);
+
+      const x=current%w;
+      const y=Math.floor(current/w);
+
+      for(const offset of neighbours){
+        const next=current+offset;
+        if(next<0||next>=mask.length)continue;
+
+        const nx=next%w;
+        const ny=Math.floor(next/w);
+
+        if(Math.abs(nx-x)>1||Math.abs(ny-y)>1)continue;
+        if(!mask[next]||visited[next])continue;
+
+        visited[next]=1;
+        stack.push(next);
+      }
+    }
+
+    // Keep connected regions of at least 4 pixels.
+    if(component.length>=4){
+      for(const pixel of component){
+        result[pixel]=1;
       }
     }
   }
@@ -450,176 +402,174 @@ function cleanEdges(edges, w, h) {
   return result;
 }
 
-// Render clean outlines onto a white background.
-function renderStencil(canvas, edges, bold) {
-  const w = canvas.width;
-  const h = canvas.height;
-  const ctx = canvas.getContext("2d");
+// Extract the outside boundary of every water shape.
+function extractBoundary(mask,w,h){
+  const boundary=new Uint8Array(mask.length);
 
-  const output = ctx.createImageData(w, h);
+  for(let y=1;y<h-1;y++){
+    for(let x=1;x<w-1;x++){
+      const i=y*w+x;
+      if(!mask[i])continue;
 
-  for (let i = 0; i < edges.length; i++) {
-    const strength = edges[i];
-    const p = i * 4;
-
-    let shade = 255;
-
-    if (strength > 42) {
-      if (bold) {
-        shade = strength > 85 ? 15 : 55;
-      } else {
-        shade = strength > 85 ? 165 : 205;
+      if(
+        !mask[i-1]||
+        !mask[i+1]||
+        !mask[i-w]||
+        !mask[i+w]
+      ){
+        boundary[i]=1;
       }
     }
-
-    output.data[p] = shade;
-    output.data[p + 1] = shade;
-    output.data[p + 2] = shade;
-    output.data[p + 3] = 255;
   }
 
-  ctx.putImageData(output, 0, 0);
+  return boundary;
+}
 
-  // Slightly strengthen the dark stencil.
-  if (bold) {
-    const copy = document.createElement("canvas");
-    copy.width = w;
-    copy.height = h;
+// Draw the same shapes in two different strengths.
+function renderStencil(canvas,boundary,bold){
+  const w=canvas.width;
+  const h=canvas.height;
+  const ctx=canvas.getContext("2d");
+  const output=ctx.createImageData(w,h);
 
-    copy.getContext("2d").drawImage(canvas, 0, 0);
+  for(let i=0;i<boundary.length;i++){
+    const p=i*4;
+    const shade=boundary[i]?(bold?15:190):255;
 
-    ctx.globalAlpha = 0.30;
-    ctx.drawImage(copy, 0.35, 0);
-    ctx.globalAlpha = 1;
+    output.data[p]=shade;
+    output.data[p+1]=shade;
+    output.data[p+2]=shade;
+    output.data[p+3]=255;
+  }
+
+  ctx.putImageData(output,0,0);
+
+  if(bold){
+    // Slightly reinforce the black outlines.
+    const copy=makeCanvas(w,h);
+    copy.getContext("2d").drawImage(canvas,0,0);
+
+    ctx.globalAlpha=0.35;
+    ctx.drawImage(copy,0.4,0);
+    ctx.globalAlpha=1;
   }
 }
 
-generateBtn.addEventListener("click", () => {
-  if (!sourceImage) return;
+generateBtn.addEventListener("click",()=>{
+  if(!sourceImage)return;
 
-  generateBtn.disabled = true;
-  setStatus("Processing the photograph...");
+  generateBtn.disabled=true;
+  status("Identifying water shapes...");
 
-  // Allow the status to display before processing.
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      try {
-        const w = original.width;
-        const h = original.height;
+  requestAnimationFrame(()=>{
+    setTimeout(()=>{
+      try{
+        const w=original.width;
+        const h=original.height;
 
-        const imageData = original
+        const imageData=original
           .getContext("2d")
-          .getImageData(0, 0, w, h);
+          .getImageData(0,0,w,h);
 
-        const gray = grayscale(imageData);
-        const enhanced = enhanceDetails(gray, w, h);
-        const edges = detectEdges(enhanced, w, h);
-        const thinned = thinEdges(edges, w, h);
-        const cleaned = cleanEdges(thinned, w, h);
+        const gray=grayscale(imageData);
+        const mask=createWaterMask(gray,w,h);
+        const cleaned=cleanMask(mask,w,h);
+        const shapes=filterComponents(cleaned,w,h);
+        const boundary=extractBoundary(shapes,w,h);
 
-        renderStencil(light, cleaned, false);
-        renderStencil(dark, cleaned, true);
+        renderStencil(light,boundary,false);
+        renderStencil(dark,boundary,true);
 
         enableOutputs(true);
-        setStatus("Stencils ready! Print or download either version.");
-      } catch (error) {
+        status("Stencils ready! Print or download either version.");
+      }catch(error){
         console.error(error);
-        setStatus("Could not generate the stencil.");
+        status("Unable to generate the stencil.");
       }
 
-      generateBtn.disabled = false;
-    }, 20);
+      generateBtn.disabled=false;
+    },20);
   });
 });
 
-// Download PNG.
-function downloadCanvas(canvas, filename) {
-  canvas.toBlob(blob => {
-    if (!blob) {
-      setStatus("Unable to save the image.");
-      return;
-    }
+// Download as PNG.
+function downloadCanvas(canvas,filename){
+  canvas.toBlob(blob=>{
+    if(!blob)return;
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
 
-    a.href = url;
-    a.download = filename;
+    a.href=url;
+    a.download=filename;
     document.body.appendChild(a);
     a.click();
     a.remove();
 
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }, "image/png");
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  },"image/png");
 }
 
-// Print on a clean white page.
-function printCanvas(canvas) {
-  const imageURL = canvas.toDataURL("image/png");
-  const win = window.open("", "_blank");
+// Print on A4 paper.
+function printCanvas(canvas){
+  const url=canvas.toDataURL("image/png");
+  const win=window.open("","_blank");
 
-  if (!win) {
-    setStatus("Please allow pop-ups to print.");
+  if(!win){
+    status("Please allow pop-ups to print.");
     return;
   }
 
-  win.document.open();
   win.document.write(`
-    <!DOCTYPE html>
+    <!doctype html>
     <html>
     <head>
       <title>Print Stencil</title>
       <style>
-        @page { size:A4; margin:12mm; }
-        body { margin:0; text-align:center; }
-        img {
-          max-width:100%;
-          max-height:270mm;
-          width:auto;
-          height:auto;
-          object-fit:contain;
-        }
+        @page{size:A4;margin:12mm}
+        body{margin:0;text-align:center;background:white}
+        img{max-width:100%;max-height:270mm;object-fit:contain}
       </style>
     </head>
     <body>
-      <img id="printImage" src="${imageURL}">
+      <img id="printImage" src="${url}">
       <script>
-        document.getElementById("printImage").onload =
-          () => setTimeout(() => window.print(), 250);
+        document.getElementById("printImage").onload=
+          ()=>setTimeout(()=>window.print(),250);
       <\/script>
     </body>
     </html>
   `);
+
   win.document.close();
 }
 
-$("saveLight").onclick = () =>
-  downloadCanvas(light, "doodle-studio-light-stencil.png");
+$("saveLight").onclick=()=>
+  downloadCanvas(light,"light-water-stencil.png");
 
-$("saveDark").onclick = () =>
-  downloadCanvas(dark, "doodle-studio-dark-stencil.png");
+$("saveDark").onclick=()=>
+  downloadCanvas(dark,"dark-water-stencil.png");
 
-$("printLight").onclick = () => printCanvas(light);
-$("printDark").onclick = () => printCanvas(dark);
+$("printLight").onclick=()=>printCanvas(light);
+$("printDark").onclick=()=>printCanvas(dark);
 
-$("resetBtn").onclick = () => {
-  input.value = "";
-  sourceImage = null;
+$("resetBtn").onclick=()=>{
+  input.value="";
+  sourceImage=null;
 
-  if (imageURL) {
+  if(imageURL){
     URL.revokeObjectURL(imageURL);
-    imageURL = null;
+    imageURL=null;
   }
 
-  [original, light, dark].forEach(canvas => {
-    canvas.width = 1;
-    canvas.height = 1;
-    clearCanvas(canvas);
+  [original,light,dark].forEach(c=>{
+    c.width=1;
+    c.height=1;
   });
 
-  generateBtn.disabled = true;
+  generateBtn.disabled=true;
   enableOutputs(false);
-  setStatus("Choose a photograph to begin.");
+  status("Choose a photograph to begin.");
 };
 </script>
 
